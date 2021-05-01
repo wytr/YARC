@@ -688,7 +688,7 @@ void setup()
 {
     #if USE_PROCESSING_PLOTTER != 0
     p.Begin();
-    p.AddTimeGraph( "PID-Regler", 80000, "momentane testprogramatur", x, "Zieltestprogramatur", y);
+    p.AddTimeGraph( "PID-Regler", 1000, "momentane Temperatur", x, "Zieltemperatur", y);
     #endif
 
     #if USE_PROCESSING_PLOTTER == 0
