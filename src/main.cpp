@@ -147,7 +147,7 @@ static lv_obj_t *ddlist;
 
 //Timerstuff
 unsigned long currentTime = 0;
-unsigned long previousTime1 = 0;
+unsigned long previousIntervalEndTime = 0;
 unsigned long previous_thermocouple_check_time = 0;
 unsigned long previousTime3 = 0;
 unsigned long oneSecondInterval = 1000;
@@ -166,8 +166,8 @@ const int datapoints = 40;
 int profile_chart[datapoints];
 int actual_chart[datapoints];
 
-int stepsize = 2;
-int step_iterator = 0;
+int dataPointDuration = 2;
+int dataPointIterator = 0;
 
 
 #if USE_LV_LOG != 0
@@ -491,6 +491,7 @@ void updateTableContent(float time1, float temp1, float time2, float temp2, floa
     char temp_buffer2[12] = {0};
     char time_buffer3[12] = {0};
     char temp_buffer3[12] = {0};
+
     snprintf(time_buffer1, sizeof(time_buffer1), "%.0fs", time1);
     //snprintf(temp_buffer1, sizeof(temp_buffer1), "%.0f°C", temp1);
     snprintf(temp_buffer1, sizeof(temp_buffer1), "ramp", temp1);
@@ -605,8 +606,8 @@ void loader_event_handler(lv_obj_t * obj, lv_event_t event)
             }
             buzz_multiple_times(profile_dropdown_option+1);
             updateTableContent(currentProfile.preheatTime, currentProfile.preheatTemp, currentProfile.soakTime, currentProfile.soakTemp,currentProfile.reflowTime, currentProfile.reflowTemp);
-            stepsize = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime)/datapoints);
-            //Serial.println(stepsize);
+            dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime)/datapoints);
+            //Serial.println(dataPointDuration);
         }
         else{
 
@@ -631,7 +632,7 @@ void start_event_handler(lv_obj_t * obj, lv_event_t event){
              Serial.println("Process started.");
              lv_label_set_text(startbtnlabel, "STOP");
          }
-         else if(currentPhase !=IDLE){
+         else{
              currentPhase = COOLDOWN;
              Serial.println("aborted.. cooling down");
              lv_label_set_text(startbtnlabel, "START");
@@ -718,6 +719,7 @@ void setup()
     lv_indev_drv_register(&indev_drv);
     lv_style_init(&st);
     lv_style_set_text_font(&st, LV_STATE_DEFAULT, &lv_font_montserrat_18);
+
     screen_init();
     createTabview(scr);
     createStatusLabel(scr);
@@ -745,9 +747,8 @@ void setup()
 
     pid_setup();
 
-    currentPhase = IDLE;
 
-    stepsize = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime)/datapoints);
+    dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime)/datapoints);
     
 }
 
@@ -763,7 +764,7 @@ void loop()
 
 
 
-    if (currentTime - previousTime1 >= oneSecondInterval){
+    if (currentTime - previousIntervalEndTime >= oneSecondInterval){
 
         if (isnan(sqrt(thermocouple.readCelsius())) || (thermocouple.readCelsius() == 0.0) ){
         currentPhase = COOLDOWN;
@@ -772,12 +773,12 @@ void loop()
         lv_label_set_text(indicatorlabel, LV_SYMBOL_WARNING);
         }
 
-            if(processTimeCounter == step_iterator*stepsize)
+            if(processTimeCounter == dataPointIterator*dataPointDuration)
             {
             lv_chart_set_next(chart, ser1, currentTemp);
             lv_chart_set_next(chart, ser2, currentTargetTemp);
             lv_chart_refresh(chart);
-            step_iterator++;
+            dataPointIterator++;
             }
 
         currentTemp = thermocouple.readCelsius();
@@ -836,7 +837,7 @@ void loop()
         myPID.SetTunings(PID_KP_PREHEAT, PID_KI_PREHEAT, PID_KD_PREHEAT);
         lv_label_set_text(statuslabel, "Status: PREHEAT");
 
-        if (preTempSet == false){
+        if (!preTempSet){
             currentProfile.preheatTemp = currentTemp;
             preTempSet = true;
         }
@@ -844,19 +845,16 @@ void loop()
             if (currentProfile.preheatCounter < currentProfile.preheatTime)
             {
                 currentTargetTemp = currentProfile.preheatTemp + ((currentProfile.soakTemp - currentProfile.preheatTemp)/currentProfile.preheatTime) * currentProfile.preheatCounter;
-                if (preheatMessageSent
-             == false) 
+                if (!preheatMessageSent) 
                 {
                     Serial.println("STATUS: PREHEAT");
-                    preheatMessageSent
-                 = true;
+                    preheatMessageSent = true;
                 }
                 currentProfile.preheatCounter++;
             }
             else{
                 currentProfile.preheatCounter = 0;
-                preheatMessageSent
-             = false;
+                preheatMessageSent = false;
                 currentPhase = SOAK;
             }
             Setpoint = currentTargetTemp;
@@ -871,7 +869,7 @@ void loop()
             {
             currentTargetTemp = currentProfile.soakTemp;
 
-                if(soakMessageSent == false)
+                if(!soakMessageSent)
                 {
                 Serial.println("STATUS: SOAK");
                 soakMessageSent = true;
@@ -924,17 +922,18 @@ void loop()
 
         case COOLDOWN:
             Output = 0;
+            digitalWrite(RELAY_PIN, LOW);
             buzzeralarm();
             currentProfile.cooldownCounter = 0;
             currentProfile.preheatCounter = 0;
             currentProfile.soakCounter = 0;
             currentProfile.reflowCounter = 0;
-            step_iterator = 0;
+            dataPointIterator = 0;
 
             lv_label_set_text(statuslabel, "Status: COOLDOWN");
             lv_label_set_text(startbtnlabel, "START");
             lv_btn_set_state(startbtn, LV_BTN_STATE_CHECKED_RELEASED);
-            digitalWrite(RELAY_PIN, LOW);
+            
             if (cooldownMessageSent == false){
             currentTargetTemp = currentProfile.IDLETemp;
             Serial.println("STATUS: COOLDOWN");
@@ -956,7 +955,7 @@ void loop()
 
      }
      
-     previousTime1 = currentTime;
+     previousIntervalEndTime = currentTime;
 
 }
 
