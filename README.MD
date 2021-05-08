@@ -1,9 +1,7 @@
 ### Setup Instructions
-1. Install plugin pltformio (bzw. arduino bla)
+1. Install plugin pltformio 
 2. Create project for specific controller
-3. Change controller following pin defines in /include/main.cpp
-    1. var 1
-    2. var 2
+3. To match your wiring set the defines the corresponding value in _pindefines.h_
 
 #### PlatformIO Specific Instructions
 
@@ -15,4 +13,4 @@
 2. lvgl -> lv_conf.h
 
 ### Unit Testing
-To run unit tests execute `platformio test....bla` in command line
+To run unit tests execute `platformio test....` in command line
