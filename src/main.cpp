@@ -12,7 +12,7 @@
 #define BUZZER_PIN 32
 #define BUZZER_CHANNEL 1
 #define PID_SAMPLE_TIME 1000
-#define USE_PROCESSING_PLOTTER 1
+#define USE_PROCESSING_PLOTTER 0
 // ***** PRE-HEAT STAGE *****
 #define PID_KP_PREHEAT 100
 #define PID_KI_PREHEAT 0.025
@@ -37,7 +37,7 @@ Plotter p;
 
 //PID
 double Setpoint, Input, Output;
-double Kp=PID_KP_PREHEAT, Ki=PID_KI_PREHEAT, Kd =PID_KD_PREHEAT;
+double Kp = PID_KP_PREHEAT, Ki = PID_KI_PREHEAT, Kd = PID_KD_PREHEAT;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 int WindowSize = 2000;
 unsigned long windowStartTime;
@@ -57,7 +57,7 @@ int profile_dropdown_option;
 int processTimeCounter = 0;
 //To-Do: implement this to keep track of maximum temperature per process
 float max_process_temp = 0;
-//processphase 
+//processphase
 enum phase
 {
     IDLE = 0,
@@ -69,7 +69,8 @@ enum phase
 };
 //Instance of phaseenum
 phase currentPhase = IDLE;
-struct profileStruct {
+struct profileStruct
+{
 
     float preheatTime = 60;
     float soakTime = 80;
@@ -86,7 +87,7 @@ struct profileStruct {
     float soakTemp = 150;
     float reflowTemp = 230;
 
-}currentProfile;
+} currentProfile;
 //profile preheatTime, soakTime, reflowTime, preheatTemp, soakTemp, reflowTemp
 char buffer_preheat_time[4];
 char buffer_preheat_temp[4];
@@ -95,15 +96,15 @@ char buffer_soak_temp[4];
 char buffer_reflow_time[4];
 char buffer_reflow_temp[4];
 
-float bleihaltig[6] = {60,80,60,30,150,230};
-float bleifrei[6] = {60,80,60,30,150,250};
-float temper[6] = {120,1000,1000,60,60,60};
-float custom[6] = {60,80,60,30,150,230};
+float bleihaltig[6] = {60, 80, 60, 30, 150, 230};
+float bleifrei[6] = {60, 80, 60, 30, 150, 250};
+float temper[6] = {120, 1000, 1000, 60, 60, 60};
+float custom[6] = {60, 80, 60, 30, 150, 230};
 
-static const char * btnm_map[] = {"1", "2", "3", "\n",
-                                  "4", "5", "6", "\n",
-                                  "7", "8", "9", "\n",
-                                  "0", "<", "OK", ""};
+static const char *btnm_map[] = {"1", "2", "3", "\n",
+                                 "4", "5", "6", "\n",
+                                 "7", "8", "9", "\n",
+                                 "0", "<", "OK", ""};
 
 //Messageindicator for serialprint
 bool idleMessageSent = false;
@@ -115,7 +116,7 @@ bool cooldownMessageSent = false;
 const char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
 //TFT Instance
-TFT_eSPI tft = TFT_eSPI(); 
+TFT_eSPI tft = TFT_eSPI();
 //LVGL UP IN HERE, UP IN HERE
 static lv_disp_buf_t disp_buf;
 static lv_color_t buf[LV_HOR_RES_MAX * 10];
@@ -138,8 +139,8 @@ static lv_obj_t *startbtnlabel;
 static lv_obj_t *statuslabel;
 static lv_obj_t *indicatorlabel;
 static lv_obj_t *loadbtnlabel;
-static lv_obj_t * buttonmatrix;
-static lv_obj_t * loadbtn;
+static lv_obj_t *buttonmatrix;
+static lv_obj_t *loadbtn;
 static lv_chart_series_t *ser1;
 static lv_chart_series_t *ser2;
 static lv_style_t st;
@@ -169,7 +170,6 @@ int actual_chart[datapoints];
 int dataPointDuration = 2;
 int dataPointIterator = 0;
 
-
 #if USE_LV_LOG != 0
 /* Serial debugging */
 void my_print(lv_log_level_t level, const char *file, uint32_t line, const char *dsc)
@@ -180,7 +180,8 @@ void my_print(lv_log_level_t level, const char *file, uint32_t line, const char 
 }
 #endif
 
-void tft_init(){
+void tft_init()
+{
 
     tft.begin();        /* TFT init */
     tft.setRotation(0); /* Landscape orientation  = 1*/
@@ -189,32 +190,35 @@ void tft_init(){
     lv_disp_buf_init(&disp_buf, buf, NULL, LV_HOR_RES_MAX * 10);
 }
 
-void esp_pin_init(){
+void esp_pin_init()
+{
     pinMode(vccPin, OUTPUT);
     digitalWrite(vccPin, HIGH);
     pinMode(RELAY_PIN, OUTPUT);
 }
 
-void lv_theme_init(){
+void lv_theme_init()
+{
     th = lv_theme_material_init(LV_THEME_DEFAULT_COLOR_PRIMARY, LV_THEME_DEFAULT_COLOR_SECONDARY, LV_THEME_DEFAULT_FLAG, LV_THEME_DEFAULT_FONT_SMALL, LV_THEME_DEFAULT_FONT_NORMAL, LV_THEME_DEFAULT_FONT_SUBTITLE, LV_THEME_DEFAULT_FONT_TITLE);
     lv_theme_set_act(th);
 }
 
-void screen_init(){
+void screen_init()
+{
     scr = lv_cont_create(NULL, NULL);
     lv_scr_load(scr);
 }
 
-void createTabview(lv_obj_t *parent){
+void createTabview(lv_obj_t *parent)
+{
     tabview = lv_tabview_create(parent, NULL);
     lv_tabview_set_btns_pos(tabview, LV_TABVIEW_TAB_POS_BOTTOM);
     lv_tabview_set_anim_time(tabview, 50);
     lv_obj_set_size(tabview, LV_HOR_RES_MAX, LV_VER_RES_MAX);
-
 }
 
-void createTabs(lv_obj_t *parent){
-    
+void createTabs(lv_obj_t *parent)
+{
 
     homeTab = lv_tabview_add_tab(parent, LV_SYMBOL_HOME);
     profileTab = lv_tabview_add_tab(parent, LV_SYMBOL_SETTINGS);
@@ -222,19 +226,20 @@ void createTabs(lv_obj_t *parent){
     miscTab = lv_tabview_add_tab(parent, LV_SYMBOL_EDIT);
 
     lv_page_set_scroll_propagation(profileTab, false);
-    lv_page_set_scrollbar_mode(profileTab,LV_SCROLLBAR_MODE_OFF);
+    lv_page_set_scrollbar_mode(profileTab, LV_SCROLLBAR_MODE_OFF);
 
     lv_page_set_scroll_propagation(homeTab, false);
-    lv_page_set_scrollbar_mode(homeTab,LV_SCROLLBAR_MODE_OFF);
+    lv_page_set_scrollbar_mode(homeTab, LV_SCROLLBAR_MODE_OFF);
 
     lv_page_set_scroll_propagation(chartTab, false);
-    lv_page_set_scrollbar_mode(chartTab,LV_SCROLLBAR_MODE_OFF);
+    lv_page_set_scrollbar_mode(chartTab, LV_SCROLLBAR_MODE_OFF);
 
     lv_page_set_scroll_propagation(miscTab, false);
-    lv_page_set_scrollbar_mode(miscTab,LV_SCROLLBAR_MODE_OFF); 
+    lv_page_set_scrollbar_mode(miscTab, LV_SCROLLBAR_MODE_OFF);
 }
 
-void createTable(lv_obj_t *parent){
+void createTable(lv_obj_t *parent)
+{
 
     table = lv_table_create(parent, NULL);
 
@@ -261,19 +266,18 @@ void createTable(lv_obj_t *parent){
     /*Fill the third column*/
     lv_table_set_cell_value(table, 0, 2, "r_t");
     lv_table_set_cell_value(table, 1, 2, "r_T");
-
 }
 
-void createChart(lv_obj_t *parent){
-    
+void createChart(lv_obj_t *parent)
+{
 
     for (int i = 0; i < datapoints; i++) // ...initialize it
     {
-    profile_chart[i] = 0;
+        profile_chart[i] = 0;
     }
     for (int i = 0; i < datapoints; i++) // ...initialize it
     {
-    actual_chart[i] = 0;
+        actual_chart[i] = 0;
     }
 
     chart = lv_chart_create(chartTab, NULL);
@@ -295,9 +299,9 @@ void createChart(lv_obj_t *parent){
     //lv_chart_set_x_tick_length(chart, 2, 2);
     lv_chart_set_y_tick_texts(chart, "300\n225\n150\n75\n", 4, LV_CHART_AXIS_DRAW_LAST_TICK);
     lv_chart_set_y_tick_length(chart, 4, 4);
-    
+
     /*Add two data series*/
-    
+
     ser2 = lv_chart_add_series(chart, LV_COLOR_RED);
     ser1 = lv_chart_add_series(chart, LV_COLOR_BLACK);
     /*Set the next points on 'ser1'*/
@@ -315,20 +319,22 @@ void createChart(lv_obj_t *parent){
         ser2->points[j] = actual_chart[j];
     }
     */
-    lv_chart_refresh(chart); /*Required after direct set*/;
-    
+    lv_chart_refresh(chart); /*Required after direct set*/
+    ;
 }
 
-void createTemperatureMeter(lv_obj_t *parent){
+void createTemperatureMeter(lv_obj_t *parent)
+{
     temperature_meter = lv_linemeter_create(parent, NULL);
     lv_obj_set_size(temperature_meter, 170, 170);
     lv_obj_align(temperature_meter, NULL, LV_ALIGN_CENTER, 0, -20);
     lv_linemeter_set_value(temperature_meter, 0);
-    lv_linemeter_set_range(temperature_meter,10, 250);
+    lv_linemeter_set_range(temperature_meter, 10, 250);
     lv_obj_set_click(temperature_meter, false);
 }
 
-void createTemperatureLabel(lv_obj_t *parent){
+void createTemperatureLabel(lv_obj_t *parent)
+{
 
     temperature_label = lv_label_create(parent, NULL);
     lv_label_set_text(temperature_label, "N/A");
@@ -336,21 +342,24 @@ void createTemperatureLabel(lv_obj_t *parent){
     lv_obj_set_style_local_text_font(temperature_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_16);
 }
 
-void createStatusLabel(lv_obj_t *parent){
+void createStatusLabel(lv_obj_t *parent)
+{
 
     statuslabel = lv_label_create(parent, NULL);
     lv_label_set_text(statuslabel, "Status: IDLE");
     lv_obj_align(statuslabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
 }
 
-void createIndicator(lv_obj_t *parent){
+void createIndicator(lv_obj_t *parent)
+{
 
     indicatorlabel = lv_label_create(parent, NULL);
     lv_label_set_text(indicatorlabel, LV_SYMBOL_MINUS);
     lv_obj_align(indicatorlabel, NULL, LV_ALIGN_IN_TOP_RIGHT, -5, 0);
 }
 
-void createStartButton(lv_obj_t *parent){
+void createStartButton(lv_obj_t *parent)
+{
 
     startbtn = lv_btn_create(parent, NULL);
     lv_obj_align(startbtn, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -10);
@@ -358,32 +367,37 @@ void createStartButton(lv_obj_t *parent){
     lv_btn_toggle(startbtn);
 }
 
-void createStartButtonLabel(lv_obj_t *parent){
+void createStartButtonLabel(lv_obj_t *parent)
+{
 
     startbtnlabel = lv_label_create(parent, NULL);
     lv_label_set_text(startbtnlabel, "START");
     lv_obj_set_style_local_text_font(startbtnlabel, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_18);
 }
 
-void createLoadButton(lv_obj_t *parent){
+void createLoadButton(lv_obj_t *parent)
+{
 
     loadbtn = lv_btn_create(parent, NULL);
     lv_obj_align(loadbtn, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -10);
 }
 
-void createLoadButtonLabel(lv_obj_t *parent){
+void createLoadButtonLabel(lv_obj_t *parent)
+{
 
     loadbtnlabel = lv_label_create(parent, NULL);
     lv_label_set_text(loadbtnlabel, "LOAD");
 }
 
-void createClockLabel(lv_obj_t *parent){
+void createClockLabel(lv_obj_t *parent)
+{
 
     clockLabel = lv_label_create(parent, NULL);
     lv_obj_align(clockLabel, NULL, LV_ALIGN_IN_TOP_LEFT, 3, 0);
 }
 
-void createButtonMatrix(lv_obj_t *parent){
+void createButtonMatrix(lv_obj_t *parent)
+{
 
     buttonmatrix = lv_btnmatrix_create(parent, NULL);
     lv_obj_set_size(buttonmatrix, 240, 160);
@@ -401,13 +415,13 @@ void createDropdown(lv_obj_t *parent)
     lv_dropdown_set_options(ddlist, "bleihaltig\n"
                                     "bleifrei\n"
                                     "temper\n"
-                                    "custom\n"
-                                    );
+                                    "custom\n");
 
     lv_obj_align(ddlist, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
 }
 
-void pid_setup(){
+void pid_setup()
+{
     windowStartTime = millis();
     Setpoint = 0;
     myPID.SetOutputLimits(0, WindowSize);
@@ -436,14 +450,14 @@ bool my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 
     if (!touched)
     {
-        
+
         data->state = LV_INDEV_STATE_REL;
         return false;
     }
     else
     {
-    //tone(BUZZER_PIN, NOTE_A4, 10, BUZZER_CHANNEL);
-    //noTone(BUZZER_PIN, BUZZER_CHANNEL);
+        //tone(BUZZER_PIN, NOTE_A4, 10, BUZZER_CHANNEL);
+        //noTone(BUZZER_PIN, BUZZER_CHANNEL);
         data->state = LV_INDEV_STATE_PR;
     }
     if (touchX > screenWidth || touchY > screenHeight)
@@ -459,7 +473,6 @@ bool my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
         /*Set the coordinates*/
         data->point.x = touchX;
         data->point.y = touchY;
-
     }
 
     return false; /*Return `false` because we are not buffering and no more data to read*/
@@ -484,7 +497,8 @@ void updateTemperatureLabel(float value)
     lv_label_set_text(temperature_label, buffer);
 }
 
-void updateTableContent(float time1, float temp1, float time2, float temp2, float time3, float temp3){
+void updateTableContent(float time1, float temp1, float time2, float temp2, float time3, float temp3)
+{
     char time_buffer1[12] = {0};
     char temp_buffer1[12] = {0};
     char time_buffer2[12] = {0};
@@ -511,16 +525,17 @@ void updateTableContent(float time1, float temp1, float time2, float temp2, floa
     /*Fill the third column*/
     lv_table_set_cell_value(table, 0, 2, time_buffer3);
     lv_table_set_cell_value(table, 1, 2, temp_buffer3);
-
 }
 
-void buzzer() {
+void buzzer()
+{
 
     tone(BUZZER_PIN, NOTE_C5, 100, BUZZER_CHANNEL);
     noTone(BUZZER_PIN, BUZZER_CHANNEL);
 }
 
-void buzz_startup(){
+void buzz_startup()
+{
     tone(BUZZER_PIN, NOTE_F5, 100, BUZZER_CHANNEL);
     noTone(BUZZER_PIN, BUZZER_CHANNEL);
     tone(BUZZER_PIN, NOTE_A5, 100, BUZZER_CHANNEL);
@@ -534,121 +549,132 @@ void buzz_startup(){
     tone(BUZZER_PIN, NOTE_F6, 100, BUZZER_CHANNEL);
 }
 
-void buzz_note(int note) {
+void buzz_note(int note)
+{
 
     tone(BUZZER_PIN, note, 50, BUZZER_CHANNEL);
     noTone(BUZZER_PIN, BUZZER_CHANNEL);
 }
 
-void buzz_multiple_times(int x) {
+void buzz_multiple_times(int x)
+{
 
-    for(int i=0; i < x; i++){
-    tone(BUZZER_PIN, NOTE_C5, 100, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
-    tone(BUZZER_PIN, NOTE_C1, 100, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
+    for (int i = 0; i < x; i++)
+    {
+        tone(BUZZER_PIN, NOTE_C5, 100, BUZZER_CHANNEL);
+        noTone(BUZZER_PIN, BUZZER_CHANNEL);
+        tone(BUZZER_PIN, NOTE_C1, 100, BUZZER_CHANNEL);
+        noTone(BUZZER_PIN, BUZZER_CHANNEL);
     }
 }
 
-void buzzeralarm() {
-
-    tone(BUZZER_PIN, NOTE_A5, 50, BUZZER_CHANNEL);
-  noTone(BUZZER_PIN, BUZZER_CHANNEL);
-    tone(BUZZER_PIN, NOTE_A5, 50, BUZZER_CHANNEL);
-  noTone(BUZZER_PIN, BUZZER_CHANNEL);
-    tone(BUZZER_PIN, NOTE_A5, 50, BUZZER_CHANNEL);
-  noTone(BUZZER_PIN, BUZZER_CHANNEL);
-
-}
-
-void loader_event_handler(lv_obj_t * obj, lv_event_t event)
+void buzzeralarm()
 {
 
-    if(event == LV_EVENT_CLICKED)
+    tone(BUZZER_PIN, NOTE_A5, 50, BUZZER_CHANNEL);
+    noTone(BUZZER_PIN, BUZZER_CHANNEL);
+    tone(BUZZER_PIN, NOTE_A5, 50, BUZZER_CHANNEL);
+    noTone(BUZZER_PIN, BUZZER_CHANNEL);
+    tone(BUZZER_PIN, NOTE_A5, 50, BUZZER_CHANNEL);
+    noTone(BUZZER_PIN, BUZZER_CHANNEL);
+}
+
+void loader_event_handler(lv_obj_t *obj, lv_event_t event)
+{
+
+    if (event == LV_EVENT_CLICKED)
     {
-        if (currentPhase == IDLE){
-            
+        if (currentPhase == IDLE)
+        {
+
             if (profile_dropdown_option == 0)
             {
-            currentProfile.preheatTime = bleihaltig[0];
-            currentProfile.soakTime = bleihaltig[1];
-            currentProfile.reflowTime = bleihaltig[2];
-            currentProfile.preheatTemp = bleihaltig[3];
-            currentProfile.soakTemp = bleihaltig[4];
-            currentProfile.reflowTemp = bleihaltig[5];
+                currentProfile.preheatTime = bleihaltig[0];
+                currentProfile.soakTime = bleihaltig[1];
+                currentProfile.reflowTime = bleihaltig[2];
+                currentProfile.preheatTemp = bleihaltig[3];
+                currentProfile.soakTemp = bleihaltig[4];
+                currentProfile.reflowTemp = bleihaltig[5];
             }
             if (profile_dropdown_option == 1)
             {
-            currentProfile.preheatTime = bleifrei[0];
-            currentProfile.soakTime = bleifrei[1];
-            currentProfile.reflowTime = bleifrei[2];
-            currentProfile.preheatTemp = bleifrei[3];
-            currentProfile.soakTemp = bleifrei[4];
-            currentProfile.reflowTemp = bleifrei[5];
+                currentProfile.preheatTime = bleifrei[0];
+                currentProfile.soakTime = bleifrei[1];
+                currentProfile.reflowTime = bleifrei[2];
+                currentProfile.preheatTemp = bleifrei[3];
+                currentProfile.soakTemp = bleifrei[4];
+                currentProfile.reflowTemp = bleifrei[5];
             }
             if (profile_dropdown_option == 2)
             {
-            currentProfile.preheatTime = temper[0];
-            currentProfile.soakTime = temper[1];
-            currentProfile.reflowTime = temper[2];
-            currentProfile.preheatTemp = temper[3];
-            currentProfile.soakTemp = temper[4];
-            currentProfile.reflowTemp = temper[5];
+                currentProfile.preheatTime = temper[0];
+                currentProfile.soakTime = temper[1];
+                currentProfile.reflowTime = temper[2];
+                currentProfile.preheatTemp = temper[3];
+                currentProfile.soakTemp = temper[4];
+                currentProfile.reflowTemp = temper[5];
             }
             if (profile_dropdown_option == 3)
             {
-            currentProfile.preheatTime = custom[0];
-            currentProfile.soakTime = custom[1];
-            currentProfile.reflowTime = custom[2];
-            currentProfile.preheatTemp = custom[3];
-            currentProfile.soakTemp = custom[4];
-            currentProfile.reflowTemp = custom[5];
+                currentProfile.preheatTime = custom[0];
+                currentProfile.soakTime = custom[1];
+                currentProfile.reflowTime = custom[2];
+                currentProfile.preheatTemp = custom[3];
+                currentProfile.soakTemp = custom[4];
+                currentProfile.reflowTemp = custom[5];
             }
-            buzz_multiple_times(profile_dropdown_option+1);
-            updateTableContent(currentProfile.preheatTime, currentProfile.preheatTemp, currentProfile.soakTime, currentProfile.soakTemp,currentProfile.reflowTime, currentProfile.reflowTemp);
-            dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime)/datapoints);
+            buzz_multiple_times(profile_dropdown_option + 1);
+            updateTableContent(currentProfile.preheatTime, currentProfile.preheatTemp, currentProfile.soakTime, currentProfile.soakTemp, currentProfile.reflowTime, currentProfile.reflowTemp);
+            dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / datapoints);
             //Serial.println(dataPointDuration);
         }
-        else{
+        else
+        {
 
             buzzeralarm();
             Serial.println("CANT CHANGE PROFILE WHILE NOT IN IDLE!");
         }
-
     }
 }
 
-void start_event_handler(lv_obj_t * obj, lv_event_t event){
+void start_event_handler(lv_obj_t *obj, lv_event_t event)
+{
 
-    if(event == LV_EVENT_CLICKED) {
+    if (event == LV_EVENT_CLICKED)
+    {
         Serial.println("Clicked\n");
         buzzer();
     }
-    else if(event == LV_EVENT_VALUE_CHANGED) {
+    else if (event == LV_EVENT_VALUE_CHANGED)
+    {
         Serial.println("Toggled\n");
 
-         if(currentPhase == IDLE){
-             currentPhase = PREHEAT;
-             Serial.println("Process started.");
-             lv_label_set_text(startbtnlabel, "STOP");
-         }
-         else{
-             currentPhase = COOLDOWN;
-             Serial.println("aborted.. cooling down");
-             lv_label_set_text(startbtnlabel, "START");
-         }
-
+        if (currentPhase == IDLE)
+        {
+            currentPhase = PREHEAT;
+            Serial.println("Process started.");
+            lv_label_set_text(startbtnlabel, "STOP");
+        }
+        else
+        {
+            currentPhase = COOLDOWN;
+            Serial.println("aborted.. cooling down");
+            lv_label_set_text(startbtnlabel, "START");
+        }
     }
 }
 
-void buttonmatrix_event_handler(lv_obj_t * obj, lv_event_t event)
+void buttonmatrix_event_handler(lv_obj_t *obj, lv_event_t event)
 {
-    if(event == LV_EVENT_VALUE_CHANGED) {
-        const char * txt = lv_btnmatrix_get_active_btn_text(obj);
-        if (txt == "OK"){
-            for (int i = 0; i < 40; i++){
-            lv_chart_set_next(chart, ser1, 0);
-            lv_chart_set_next(chart, ser2, 0);
+    if (event == LV_EVENT_VALUE_CHANGED)
+    {
+        const char *txt = lv_btnmatrix_get_active_btn_text(obj);
+        if (txt == "OK")
+        {
+            for (int i = 0; i < 40; i++)
+            {
+                lv_chart_set_next(chart, ser1, 0);
+                lv_chart_set_next(chart, ser2, 0);
             }
             lv_chart_refresh(chart);
         }
@@ -656,16 +682,18 @@ void buttonmatrix_event_handler(lv_obj_t * obj, lv_event_t event)
     }
 }
 
-void tv_event_cb(lv_obj_t * obj, lv_event_t event)
-{ 
-    if(event == LV_EVENT_VALUE_CHANGED) {
+void tv_event_cb(lv_obj_t *obj, lv_event_t event)
+{
+    if (event == LV_EVENT_VALUE_CHANGED)
+    {
         buzz_note(NOTE_C6);
     }
 }
 
-void rtc_connect(){
+void rtc_connect()
+{
 
-        if (!rtc.begin())
+    if (!rtc.begin())
     {
         Serial.println("Couldn't find RTC");
         while (1)
@@ -681,27 +709,25 @@ void rtc_connect(){
         // January 21, 2014 at 3am you would call:
         // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
     }
-
-    
 }
 
 void setup()
 {
-    #if USE_PROCESSING_PLOTTER != 0
+#if USE_PROCESSING_PLOTTER != 0
     p.Begin();
-    p.AddTimeGraph( "PID-Regler", 1000, "momentane Temperatur", x, "Zieltemperatur", y);
-    #endif
+    p.AddTimeGraph("PID-Regler", 1000, "momentane Temperatur", x, "Zieltemperatur", y);
+#endif
 
-    #if USE_PROCESSING_PLOTTER == 0
-    Serial.begin(9600);
-    #endif
-    
+#if USE_PROCESSING_PLOTTER == 0
+    Serial.begin(115200);
+#endif
+
     tft_init();
     lv_init();
     lv_theme_init();
     esp_pin_init();
     buzz_startup();
-    
+
     /*Initialize the display*/
     lv_disp_drv_t disp_drv;
     lv_disp_drv_init(&disp_drv);
@@ -747,9 +773,7 @@ void setup()
 
     pid_setup();
 
-
-    dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime)/datapoints);
-    
+    dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / datapoints);
 }
 
 void loop()
@@ -762,31 +786,32 @@ void loop()
 
     currentTime = millis();
 
+    if (currentTime - previousIntervalEndTime >= oneSecondInterval)
+    {
 
-
-    if (currentTime - previousIntervalEndTime >= oneSecondInterval){
-
-        if (isnan(sqrt(thermocouple.readCelsius())) || (thermocouple.readCelsius() == 0.0) ){
-        currentPhase = COOLDOWN;
-        Serial.println("THERMOCOUPLE NOT CONNECTED OR DAMAGED!");
-        lv_label_set_text(startbtnlabel, LV_SYMBOL_WARNING);
-        lv_label_set_text(indicatorlabel, LV_SYMBOL_WARNING);
+        if (isnan(sqrt(thermocouple.readCelsius())) || (thermocouple.readCelsius() == 0.0))
+        {
+            currentPhase = COOLDOWN;
+            Serial.println("THERMOCOUPLE NOT CONNECTED OR DAMAGED!");
+            lv_label_set_text(startbtnlabel, LV_SYMBOL_WARNING);
+            lv_label_set_text(indicatorlabel, LV_SYMBOL_WARNING);
         }
 
-            if(processTimeCounter == dataPointIterator*dataPointDuration)
-            {
+        if (processTimeCounter == dataPointIterator * dataPointDuration)
+        {
             lv_chart_set_next(chart, ser1, currentTemp);
             lv_chart_set_next(chart, ser2, currentTargetTemp);
             lv_chart_refresh(chart);
             dataPointIterator++;
-            }
+        }
 
         currentTemp = thermocouple.readCelsius();
 
-        if (currentTemp > max_process_temp){
+        if (currentTemp > max_process_temp)
+        {
             max_process_temp = currentTemp;
         }
-        
+
         Input = currentTemp;
 
         char buf1[9] = "hh:mm";
@@ -809,50 +834,52 @@ void loop()
         Serial.print(myPID.GetKi(), 4);
         Serial.print(" Kd = ");
         Serial.println(myPID.GetKd());
-        
 
         lv_linemeter_set_value(temperature_meter, currentTemp);
         updateTemperatureLabel(thermocouple.readCelsius());
 
-     switch (currentPhase){
+        switch (currentPhase)
+        {
 
         case IDLE:
 
-        lv_label_set_text(indicatorlabel, LV_SYMBOL_MINUS);
-        currentTargetTemp = currentProfile.IDLETemp;
-        lv_label_set_text(statuslabel, "Status: IDLE");
-        processTimeCounter = 0;
-        lv_label_set_text(indicatorlabel, LV_SYMBOL_MINUS);
-        if (idleMessageSent == false)
+            lv_label_set_text(indicatorlabel, LV_SYMBOL_MINUS);
+            currentTargetTemp = currentProfile.IDLETemp;
+            lv_label_set_text(statuslabel, "Status: IDLE");
+            processTimeCounter = 0;
+            lv_label_set_text(indicatorlabel, LV_SYMBOL_MINUS);
+            if (idleMessageSent == false)
             {
                 Serial.println("STATUS: IDLE");
                 idleMessageSent = true;
             }
-            
+
             break;
 
         case PREHEAT:
 
-        processTimeCounter++;
-        myPID.SetTunings(PID_KP_PREHEAT, PID_KI_PREHEAT, PID_KD_PREHEAT);
-        lv_label_set_text(statuslabel, "Status: PREHEAT");
+            processTimeCounter++;
+            myPID.SetTunings(PID_KP_PREHEAT, PID_KI_PREHEAT, PID_KD_PREHEAT);
+            lv_label_set_text(statuslabel, "Status: PREHEAT");
 
-        if (!preTempSet){
-            currentProfile.preheatTemp = currentTemp;
-            preTempSet = true;
-        }
-        
+            if (!preTempSet)
+            {
+                currentProfile.preheatTemp = currentTemp;
+                preTempSet = true;
+            }
+
             if (currentProfile.preheatCounter < currentProfile.preheatTime)
             {
-                currentTargetTemp = currentProfile.preheatTemp + ((currentProfile.soakTemp - currentProfile.preheatTemp)/currentProfile.preheatTime) * currentProfile.preheatCounter;
-                if (!preheatMessageSent) 
+                currentTargetTemp = currentProfile.preheatTemp + ((currentProfile.soakTemp - currentProfile.preheatTemp) / currentProfile.preheatTime) * currentProfile.preheatCounter;
+                if (!preheatMessageSent)
                 {
                     Serial.println("STATUS: PREHEAT");
                     preheatMessageSent = true;
                 }
                 currentProfile.preheatCounter++;
             }
-            else{
+            else
+            {
                 currentProfile.preheatCounter = 0;
                 preheatMessageSent = false;
                 currentPhase = SOAK;
@@ -862,22 +889,22 @@ void loop()
 
         case SOAK:
 
-        processTimeCounter++;
-        myPID.SetTunings(PID_KP_SOAK, PID_KI_SOAK, PID_KD_SOAK);
+            processTimeCounter++;
+            myPID.SetTunings(PID_KP_SOAK, PID_KI_SOAK, PID_KD_SOAK);
             lv_label_set_text(statuslabel, "Status: SOAK");
             if (currentProfile.soakCounter < currentProfile.soakTime)
             {
-            currentTargetTemp = currentProfile.soakTemp;
+                currentTargetTemp = currentProfile.soakTemp;
 
-                if(!soakMessageSent)
+                if (!soakMessageSent)
                 {
-                Serial.println("STATUS: SOAK");
-                soakMessageSent = true;
+                    Serial.println("STATUS: SOAK");
+                    soakMessageSent = true;
                 }
 
-            currentProfile.soakCounter++;
+                currentProfile.soakCounter++;
             }
-            else 
+            else
             {
                 currentProfile.soakCounter = 0;
                 soakMessageSent = false;
@@ -888,8 +915,8 @@ void loop()
 
         case REFLOW:
 
-        processTimeCounter++;
-        myPID.SetTunings(PID_KP_REFLOW, PID_KI_REFLOW, PID_KD_REFLOW);
+            processTimeCounter++;
+            myPID.SetTunings(PID_KP_REFLOW, PID_KI_REFLOW, PID_KD_REFLOW);
             lv_label_set_text(statuslabel, "Status: REFLOW");
             if (currentProfile.reflowCounter < currentProfile.reflowTime)
             {
@@ -901,17 +928,15 @@ void loop()
                 {
                     currentTargetTemp = currentProfile.reflowTemp;
                 }
-            
 
-                if(reflowMessageSent == false)
+                if (reflowMessageSent == false)
                 {
                     Serial.println("STATUS: REFLOW");
                     reflowMessageSent = true;
                 }
-            currentProfile.reflowCounter++;
-
+                currentProfile.reflowCounter++;
             }
-            else 
+            else
             {
                 currentProfile.reflowCounter = 0;
                 reflowMessageSent = false;
@@ -933,31 +958,30 @@ void loop()
             lv_label_set_text(statuslabel, "Status: COOLDOWN");
             lv_label_set_text(startbtnlabel, "START");
             lv_btn_set_state(startbtn, LV_BTN_STATE_CHECKED_RELEASED);
-            
-            if (cooldownMessageSent == false){
-            currentTargetTemp = currentProfile.IDLETemp;
-            Serial.println("STATUS: COOLDOWN");
-            cooldownMessageSent = true;
+
+            if (!cooldownMessageSent)
+            {
+                currentTargetTemp = currentProfile.IDLETemp;
+                Serial.println("STATUS: COOLDOWN");
+                cooldownMessageSent = true;
             }
             currentProfile.cooldownCounter++;
-            if (currentProfile.cooldownCounter >= currentProfile.cooldownTime || currentTemp < 50.0){
+            if (currentProfile.cooldownCounter >= currentProfile.cooldownTime || currentTemp < 50.0)
+            {
                 currentProfile.cooldownCounter = 0;
                 idleMessageSent = false;
-                preheatMessageSent= false;
+                preheatMessageSent = false;
                 soakMessageSent = false;
                 reflowMessageSent = false;
                 cooldownMessageSent = false;
                 currentPhase = IDLE;
-
             }
             Setpoint = currentTargetTemp;
             break;
+        }
 
-     }
-     
-     previousIntervalEndTime = currentTime;
-
-}
+        previousIntervalEndTime = currentTime;
+    }
 
     if (currentPhase != IDLE && currentPhase != COOLDOWN)
     {
@@ -973,13 +997,15 @@ void loop()
             lv_label_set_text(indicatorlabel, LV_SYMBOL_UP);
             digitalWrite(RELAY_PIN, HIGH);
         }
-        else {
+        else
+        {
             digitalWrite(RELAY_PIN, LOW);
             lv_label_set_text(indicatorlabel, LV_SYMBOL_DOWN);
         }
     }
-    
-    else digitalWrite(RELAY_PIN, LOW);
+
+    else
+        digitalWrite(RELAY_PIN, LOW);
 
     lv_task_handler();
 }
