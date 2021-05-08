@@ -8,9 +8,9 @@
 #include <tone32.h>
 #include <PID_v1.h>
 #include <Plotter.h>
+#include "pindefines.h"
 
-#define BUZZER_PIN 32
-#define BUZZER_CHANNEL 1
+
 #define PID_SAMPLE_TIME 1000
 #define USE_PROCESSING_PLOTTER 0
 // ***** PRE-HEAT STAGE *****
@@ -41,23 +41,17 @@ double Kp = PID_KP_PREHEAT, Ki = PID_KI_PREHEAT, Kd = PID_KD_PREHEAT;
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 int WindowSize = 2000;
 unsigned long windowStartTime;
-//MAX6675 Sensor: DataOut, ChipSelect, Clock, VCC and Instance of MAX6675
-const int thermoDO = 26;
-const int thermoCS = 27;
-const int thermoCLK = 14;
-const int vccPin = 12;
-MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
-//OutputPin for relay
-const int RELAY_PIN = 33;
+
+MAX6675 thermocouple(THERMOCOUPLE_CLOCK_PIN, THERMOCOUPLE_CHIP_SELECT_PIN, THERMOCOUPLE_DATA_OUT_PIN);
+
 //RTC
 RTC_DS3231 rtc;
-//Profile dropdown option
+
 int profile_dropdown_option;
-//Global Processtime counter
 int processTimeCounter = 0;
 //To-Do: implement this to keep track of maximum temperature per process
 float max_process_temp = 0;
-//processphase
+
 enum phase
 {
     IDLE = 0,
@@ -67,11 +61,10 @@ enum phase
     COOLDOWN = 4
 
 };
-//Instance of phaseenum
 phase currentPhase = IDLE;
+
 struct profileStruct
 {
-
     float preheatTime = 60;
     float soakTime = 80;
     float reflowTime = 60;
@@ -86,9 +79,8 @@ struct profileStruct
     float preheatTemp = 30;
     float soakTemp = 150;
     float reflowTemp = 230;
-
 } currentProfile;
-//profile preheatTime, soakTime, reflowTime, preheatTemp, soakTemp, reflowTemp
+
 char buffer_preheat_time[4];
 char buffer_preheat_temp[4];
 char buffer_soak_time[4];
@@ -96,8 +88,8 @@ char buffer_soak_temp[4];
 char buffer_reflow_time[4];
 char buffer_reflow_temp[4];
 
-float bleihaltig[6] = {60, 80, 60, 30, 150, 230};
-float bleifrei[6] = {60, 80, 60, 30, 150, 250};
+float leaded[6] = {60, 80, 60, 30, 150, 230};
+float leadFree[6] = {60, 80, 60, 30, 150, 250};
 float temper[6] = {120, 1000, 1000, 60, 60, 60};
 float custom[6] = {60, 80, 60, 30, 150, 230};
 
@@ -157,8 +149,8 @@ unsigned long tenSecondInterval = 10000;
 
 float currentTemp;
 float currentTargetTemp;
-//Bool for checking if RELAY_PIN is on or off
-boolean sensorError = false;
+//Bool for checking if SOLID_STATE_RELAY_OUTPUT_PIN is on or off
+boolean thermocoupleError = false;
 //Indicator -> Set preheattemp to ambienttemp to get THAT SWEET GERADE
 boolean preTempSet = false;
 
@@ -192,9 +184,9 @@ void tft_init()
 
 void esp_pin_init()
 {
-    pinMode(vccPin, OUTPUT);
-    digitalWrite(vccPin, HIGH);
-    pinMode(RELAY_PIN, OUTPUT);
+    pinMode(THERMOCOUPLE_VCC_PIN, OUTPUT);
+    digitalWrite(THERMOCOUPLE_VCC_PIN, HIGH);
+    pinMode(SOLID_STATE_RELAY_OUTPUT_PIN, OUTPUT);
 }
 
 void lv_theme_init()
@@ -412,8 +404,8 @@ void createButtonMatrix(lv_obj_t *parent)
 void createDropdown(lv_obj_t *parent)
 {
     ddlist = lv_dropdown_create(parent, NULL);
-    lv_dropdown_set_options(ddlist, "bleihaltig\n"
-                                    "bleifrei\n"
+    lv_dropdown_set_options(ddlist, "leaded\n"
+                                    "leadFree\n"
                                     "temper\n"
                                     "custom\n");
 
@@ -589,21 +581,21 @@ void loader_event_handler(lv_obj_t *obj, lv_event_t event)
 
             if (profile_dropdown_option == 0)
             {
-                currentProfile.preheatTime = bleihaltig[0];
-                currentProfile.soakTime = bleihaltig[1];
-                currentProfile.reflowTime = bleihaltig[2];
-                currentProfile.preheatTemp = bleihaltig[3];
-                currentProfile.soakTemp = bleihaltig[4];
-                currentProfile.reflowTemp = bleihaltig[5];
+                currentProfile.preheatTime = leaded[0];
+                currentProfile.soakTime = leaded[1];
+                currentProfile.reflowTime = leaded[2];
+                currentProfile.preheatTemp = leaded[3];
+                currentProfile.soakTemp = leaded[4];
+                currentProfile.reflowTemp = leaded[5];
             }
             if (profile_dropdown_option == 1)
             {
-                currentProfile.preheatTime = bleifrei[0];
-                currentProfile.soakTime = bleifrei[1];
-                currentProfile.reflowTime = bleifrei[2];
-                currentProfile.preheatTemp = bleifrei[3];
-                currentProfile.soakTemp = bleifrei[4];
-                currentProfile.reflowTemp = bleifrei[5];
+                currentProfile.preheatTime = leadFree[0];
+                currentProfile.soakTime = leadFree[1];
+                currentProfile.reflowTime = leadFree[2];
+                currentProfile.preheatTemp = leadFree[3];
+                currentProfile.soakTemp = leadFree[4];
+                currentProfile.reflowTemp = leadFree[5];
             }
             if (profile_dropdown_option == 2)
             {
@@ -947,7 +939,7 @@ void loop()
 
         case COOLDOWN:
             Output = 0;
-            digitalWrite(RELAY_PIN, LOW);
+            digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
             buzzeralarm();
             currentProfile.cooldownCounter = 0;
             currentProfile.preheatCounter = 0;
@@ -995,17 +987,17 @@ void loop()
         if (Output > millis() - windowStartTime)
         {
             lv_label_set_text(indicatorlabel, LV_SYMBOL_UP);
-            digitalWrite(RELAY_PIN, HIGH);
+            digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, HIGH);
         }
         else
         {
-            digitalWrite(RELAY_PIN, LOW);
+            digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
             lv_label_set_text(indicatorlabel, LV_SYMBOL_DOWN);
         }
     }
 
     else
-        digitalWrite(RELAY_PIN, LOW);
+        digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
 
     lv_task_handler();
 }
