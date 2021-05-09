@@ -9,7 +9,7 @@
 #include <PID_v1.h>
 #include <Plotter.h>
 #include "pindefines.h"
-
+#include "buzz.h"
 
 #define PID_SAMPLE_TIME 1000
 #define USE_PROCESSING_PLOTTER 0
@@ -517,58 +517,6 @@ void updateTableContent(float time1, float temp1, float time2, float temp2, floa
     /*Fill the third column*/
     lv_table_set_cell_value(table, 0, 2, time_buffer3);
     lv_table_set_cell_value(table, 1, 2, temp_buffer3);
-}
-
-void buzzer()
-{
-
-    tone(BUZZER_PIN, NOTE_C5, 100, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
-}
-
-void buzz_startup()
-{
-    tone(BUZZER_PIN, NOTE_F5, 100, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
-    tone(BUZZER_PIN, NOTE_A5, 100, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
-    tone(BUZZER_PIN, NOTE_C6, 100, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
-    tone(BUZZER_PIN, NOTE_E6, 100, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
-    tone(BUZZER_PIN, NOTE_G6, 100, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
-    tone(BUZZER_PIN, NOTE_F6, 100, BUZZER_CHANNEL);
-}
-
-void buzz_note(int note)
-{
-
-    tone(BUZZER_PIN, note, 50, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
-}
-
-void buzz_multiple_times(int x)
-{
-
-    for (int i = 0; i < x; i++)
-    {
-        tone(BUZZER_PIN, NOTE_C5, 100, BUZZER_CHANNEL);
-        noTone(BUZZER_PIN, BUZZER_CHANNEL);
-        tone(BUZZER_PIN, NOTE_C1, 100, BUZZER_CHANNEL);
-        noTone(BUZZER_PIN, BUZZER_CHANNEL);
-    }
-}
-
-void buzzeralarm()
-{
-
-    tone(BUZZER_PIN, NOTE_A5, 50, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
-    tone(BUZZER_PIN, NOTE_A5, 50, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
-    tone(BUZZER_PIN, NOTE_A5, 50, BUZZER_CHANNEL);
-    noTone(BUZZER_PIN, BUZZER_CHANNEL);
 }
 
 void loader_event_handler(lv_obj_t *obj, lv_event_t event)
