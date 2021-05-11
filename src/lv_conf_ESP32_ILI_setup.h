@@ -698,7 +698,7 @@ typedef void * lv_obj_user_data_t;
 #  define LV_SPINNER_DEF_ANIM         LV_SPINNER_TYPE_SPINNING_ARC
 #endif
 
-/*Roller (dependencies: lv_ddlist)*/
+/*Roller (dependencies: lv_dropdownList)*/
 #define LV_USE_ROLLER    1
 #if LV_USE_ROLLER != 0
 /*Focus animation time [ms] (0: no animation)*/

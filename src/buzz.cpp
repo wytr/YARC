@@ -8,7 +8,7 @@ void buzzer()
     noTone(BUZZER_PIN, BUZZER_CHANNEL);
 }
 
-void buzz_startup()
+void buzzStartup()
 {
     tone(BUZZER_PIN, NOTE_F5, 100, BUZZER_CHANNEL);
     noTone(BUZZER_PIN, BUZZER_CHANNEL);
@@ -23,14 +23,14 @@ void buzz_startup()
     tone(BUZZER_PIN, NOTE_F6, 100, BUZZER_CHANNEL);
 }
 
-void buzz_note(int note)
+void buzzNote(int note)
 {
 
     tone(BUZZER_PIN, note, 50, BUZZER_CHANNEL);
     noTone(BUZZER_PIN, BUZZER_CHANNEL);
 }
 
-void buzz_multiple_times(int x)
+void buzzMultipleTimes(int x)
 {
 
     for (int i = 0; i < x; i++)
@@ -42,7 +42,7 @@ void buzz_multiple_times(int x)
     }
 }
 
-void buzzeralarm()
+void buzzAlarm()
 {
 
     tone(BUZZER_PIN, NOTE_A5, 50, BUZZER_CHANNEL);
