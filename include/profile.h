@@ -1,7 +1,7 @@
 #ifndef YARC_PROFILE_H
 #define YARC_PROFILE_H
 
-extern int profile_dropdown_option;
+extern int profileDropdownOption;
 
 extern float leaded[6];
 extern float leadFree[6];
@@ -20,10 +20,10 @@ struct profile
     float reflowCounter;
     float cooldownCounter;
 
-    float IDLETemp;
-    float preheatTemp;
-    float soakTemp;
-    float reflowTemp;
+    float IdleTemperature;
+    float preheatTemperature;
+    float soakTemperature;
+    float reflowTemperature;
 };
 
 extern profile currentProfile;

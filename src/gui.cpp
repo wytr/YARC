@@ -5,7 +5,7 @@
 #include "profile.h"
 
 TFT_eSPI tft = TFT_eSPI();
-lv_disp_buf_t disp_buf;
+lv_disp_buf_t displayBuffer;
 lv_color_t buf[LV_HOR_RES_MAX * 10];
 lv_obj_t *scr;
 lv_theme_t *th;
@@ -14,27 +14,27 @@ lv_obj_t *homeTab;
 lv_obj_t *profileTab;
 lv_obj_t *chartTab;
 lv_obj_t *miscTab;
-lv_obj_t *temperature_meter;
-lv_obj_t *temperature_label;
+lv_obj_t *temperatureMeter;
+lv_obj_t *temperatureLabel;
 lv_obj_t *table;
 lv_obj_t *chart;
-lv_obj_t *startbtn;
+lv_obj_t *startButton;
 lv_obj_t *clockLabel;
-lv_obj_t *startbtnlabel;
-lv_obj_t *statuslabel;
-lv_obj_t *indicatorlabel;
-lv_obj_t *loadbtnlabel;
-lv_obj_t *buttonmatrix;
-lv_obj_t *loadbtn;
-lv_chart_series_t *ser1;
-lv_chart_series_t *ser2;
+lv_obj_t *startButtonlabel;
+lv_obj_t *statusLabel;
+lv_obj_t *indicatorLabel;
+lv_obj_t *loadButtonLabel;
+lv_obj_t *buttonMatrix;
+lv_obj_t *loadButton;
+lv_chart_series_t *chartSeriesOne;
+lv_chart_series_t *chartSeriesTwo;
 lv_style_t st;
-lv_obj_t *ddlist;
+lv_obj_t *dropdownList;
 
 const int datapoints = 40;
 int profile_chart[datapoints];
 int actual_chart[datapoints];
-int profile_dropdown_option;
+int profileDropdownOption;
 int dataPointDuration = 2;
 
 char buffer_preheat_time[4];
@@ -51,52 +51,55 @@ static const char *btnm_map[] = {"1", "2", "3", "\n",
                                  "7", "8", "9", "\n",
                                  "0", "<", "OK", ""};
 
-void tft_init()
+void tftInit()
 {
 
     tft.begin();        /* TFT init */
     tft.setRotation(0); /* Landscape orientation  = 1*/
     uint16_t calData[5] = {275, 3620, 264, 3532, 2};
     tft.setTouch(calData);
-    lv_disp_buf_init(&disp_buf, buf, NULL, LV_HOR_RES_MAX * 10);
+    lv_disp_buf_init(&displayBuffer, buf, NULL, LV_HOR_RES_MAX * 10);
 }
+
 void initDisplay()
 {
     lv_disp_drv_t disp_drv;
     lv_disp_drv_init(&disp_drv);
     disp_drv.hor_res = LV_HOR_RES_MAX;
     disp_drv.ver_res = LV_VER_RES_MAX;
-    disp_drv.flush_cb = DisplayFlush;
-    disp_drv.buffer = &disp_buf;
+    disp_drv.flush_cb = displayFlush;
+    disp_drv.buffer = &displayBuffer;
     lv_disp_drv_register(&disp_drv);
 }
+
 void initDriver()
 {
     lv_indev_drv_t indev_drv;
     lv_indev_drv_init(&indev_drv);
     indev_drv.type = LV_INDEV_TYPE_POINTER;
-    indev_drv.read_cb = TouchpadRead;
+    indev_drv.read_cb = touchpadRead;
     lv_indev_drv_register(&indev_drv);
     lv_style_init(&st);
     lv_style_set_text_font(&st, LV_STATE_DEFAULT, &lv_font_montserrat_18);
 }
+
 void createTemperatureMeter(lv_obj_t *parent)
 {
-    temperature_meter = lv_linemeter_create(parent, NULL);
-    lv_obj_set_size(temperature_meter, 170, 170);
-    lv_obj_align(temperature_meter, NULL, LV_ALIGN_CENTER, 0, -20);
-    lv_linemeter_set_value(temperature_meter, 0);
-    lv_linemeter_set_range(temperature_meter, 10, 250);
-    lv_obj_set_click(temperature_meter, false);
+    temperatureMeter = lv_linemeter_create(parent, NULL);
+    lv_obj_set_size(temperatureMeter, 170, 170);
+    lv_obj_align(temperatureMeter, NULL, LV_ALIGN_CENTER, 0, -20);
+    lv_linemeter_set_value(temperatureMeter, 0);
+    lv_linemeter_set_range(temperatureMeter, 10, 250);
+    lv_obj_set_click(temperatureMeter, false);
 }
 
-void lv_theme_init()
+void lvThemeInit()
 {
     th = lv_theme_material_init(LV_THEME_DEFAULT_COLOR_PRIMARY, LV_THEME_DEFAULT_COLOR_SECONDARY, LV_THEME_DEFAULT_FLAG, LV_THEME_DEFAULT_FONT_SMALL, LV_THEME_DEFAULT_FONT_NORMAL, LV_THEME_DEFAULT_FONT_SUBTITLE, LV_THEME_DEFAULT_FONT_TITLE);
     lv_theme_set_act(th);
 }
 
-void screen_init()
+void screenInit()
 {
     scr = lv_cont_create(NULL, NULL);
     lv_scr_load(scr);
@@ -195,81 +198,80 @@ void createChart(lv_obj_t *parent)
 
     /*Add two data series*/
 
-    ser2 = lv_chart_add_series(chart, LV_COLOR_RED);
-    ser1 = lv_chart_add_series(chart, LV_COLOR_BLACK);
-    /*Set the next points on 'ser1'*/
+    chartSeriesTwo = lv_chart_add_series(chart, LV_COLOR_RED);
+    chartSeriesOne = lv_chart_add_series(chart, LV_COLOR_BLACK);
+    /*Set the next points on 'chartSeriesOne'*/
     //const int SIZE = 20;
 
     for (int i = 0; i < datapoints; i++)
     {
-        lv_chart_set_next(chart, ser1, profile_chart[i]);
-        lv_chart_set_next(chart, ser2, actual_chart[i]);
+        lv_chart_set_next(chart, chartSeriesOne, profile_chart[i]);
+        lv_chart_set_next(chart, chartSeriesTwo, actual_chart[i]);
     }
 
-    /*Directly set points on 'ser2'
+    /*Directly set points on 'chartSeriesTwo'
     for (int j = 0; j < SIZE; j++)
     {
-        ser2->points[j] = actual_chart[j];
+        chartSeriesTwo->points[j] = actual_chart[j];
     }
     */
     lv_chart_refresh(chart); /*Required after direct set*/
-    ;
 }
 
 void createTemperatureLabel(lv_obj_t *parent)
 {
 
-    temperature_label = lv_label_create(parent, NULL);
-    lv_label_set_text(temperature_label, "N/A");
-    lv_obj_align(temperature_label, NULL, LV_ALIGN_CENTER, -10, -20);
-    lv_obj_set_style_local_text_font(temperature_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_16);
+    temperatureLabel = lv_label_create(parent, NULL);
+    lv_label_set_text(temperatureLabel, "N/A");
+    lv_obj_align(temperatureLabel, NULL, LV_ALIGN_CENTER, -10, -20);
+    lv_obj_set_style_local_text_font(temperatureLabel, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_16);
 }
 
-void createStatusLabel(lv_obj_t *parent)
+void createstatusLabel(lv_obj_t *parent)
 {
 
-    statuslabel = lv_label_create(parent, NULL);
-    lv_label_set_text(statuslabel, "Status: IDLE");
-    lv_obj_align(statuslabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
+    statusLabel = lv_label_create(parent, NULL);
+    lv_label_set_text(statusLabel, "Status: IDLE");
+    lv_obj_align(statusLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
 }
 
 void createIndicator(lv_obj_t *parent)
 {
 
-    indicatorlabel = lv_label_create(parent, NULL);
-    lv_label_set_text(indicatorlabel, LV_SYMBOL_MINUS);
-    lv_obj_align(indicatorlabel, NULL, LV_ALIGN_IN_TOP_RIGHT, -5, 0);
+    indicatorLabel = lv_label_create(parent, NULL);
+    lv_label_set_text(indicatorLabel, LV_SYMBOL_MINUS);
+    lv_obj_align(indicatorLabel, NULL, LV_ALIGN_IN_TOP_RIGHT, -5, 0);
 }
 
 void createStartButton(lv_obj_t *parent)
 {
 
-    startbtn = lv_btn_create(parent, NULL);
-    lv_obj_align(startbtn, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -10);
-    lv_btn_set_checkable(startbtn, true);
-    lv_btn_toggle(startbtn);
+    startButton = lv_btn_create(parent, NULL);
+    lv_obj_align(startButton, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -10);
+    lv_btn_set_checkable(startButton, true);
+    lv_btn_toggle(startButton);
 }
 
 void createStartButtonLabel(lv_obj_t *parent)
 {
 
-    startbtnlabel = lv_label_create(parent, NULL);
-    lv_label_set_text(startbtnlabel, "START");
-    lv_obj_set_style_local_text_font(startbtnlabel, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_18);
+    startButtonlabel = lv_label_create(parent, NULL);
+    lv_label_set_text(startButtonlabel, "START");
+    lv_obj_set_style_local_text_font(startButtonlabel, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_18);
 }
 
 void createLoadButton(lv_obj_t *parent)
 {
 
-    loadbtn = lv_btn_create(parent, NULL);
-    lv_obj_align(loadbtn, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -10);
+    loadButton = lv_btn_create(parent, NULL);
+    lv_obj_align(loadButton, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -10);
 }
 
 void createLoadButtonLabel(lv_obj_t *parent)
 {
 
-    loadbtnlabel = lv_label_create(parent, NULL);
-    lv_label_set_text(loadbtnlabel, "LOAD");
+    loadButtonLabel = lv_label_create(parent, NULL);
+    lv_label_set_text(loadButtonLabel, "LOAD");
 }
 
 void createClockLabel(lv_obj_t *parent)
@@ -279,35 +281,35 @@ void createClockLabel(lv_obj_t *parent)
     lv_obj_align(clockLabel, NULL, LV_ALIGN_IN_TOP_LEFT, 3, 0);
 }
 
-void createButtonMatrix(lv_obj_t *parent)
+void createbuttonMatrix(lv_obj_t *parent)
 {
 
-    buttonmatrix = lv_btnmatrix_create(parent, NULL);
-    lv_obj_set_size(buttonmatrix, 240, 160);
-    lv_btnmatrix_set_map(buttonmatrix, btnm_map);
-    lv_btnmatrix_set_btn_width(buttonmatrix, 10, 1);
-    lv_btnmatrix_set_btn_ctrl(buttonmatrix, 11, LV_BTNMATRIX_CTRL_CHECK_STATE);
+    buttonMatrix = lv_btnmatrix_create(parent, NULL);
+    lv_obj_set_size(buttonMatrix, 240, 160);
+    lv_btnmatrix_set_map(buttonMatrix, btnm_map);
+    lv_btnmatrix_set_btn_width(buttonMatrix, 10, 1);
+    lv_btnmatrix_set_btn_ctrl(buttonMatrix, 11, LV_BTNMATRIX_CTRL_CHECK_STATE);
 
-    lv_obj_align(buttonmatrix, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 0, 0);
-    lv_obj_set_focus_parent(buttonmatrix, true);
+    lv_obj_align(buttonMatrix, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 0, 0);
+    lv_obj_set_focus_parent(buttonMatrix, true);
 }
 
 void createDropdown(lv_obj_t *parent)
 {
-    ddlist = lv_dropdown_create(parent, NULL);
-    lv_dropdown_set_options(ddlist, "leaded\n"
-                                    "leadFree\n"
-                                    "temper\n"
-                                    "custom\n");
+    dropdownList = lv_dropdown_create(parent, NULL);
+    lv_dropdown_set_options(dropdownList, "leaded\n"
+                                          "leadFree\n"
+                                          "temper\n"
+                                          "custom\n");
 
-    lv_obj_align(ddlist, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
+    lv_obj_align(dropdownList, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
 }
 
 void updateTemperatureLabel(float value)
 {
     char buffer[12] = {0};
     snprintf(buffer, sizeof(buffer), "%.2f°C", value);
-    lv_label_set_text(temperature_label, buffer);
+    lv_label_set_text(temperatureLabel, buffer);
 }
 
 void updateTableContent(float time1, float temp1, float time2, float temp2, float time3, float temp3)
@@ -340,18 +342,18 @@ void updateTableContent(float time1, float temp1, float time2, float temp2, floa
     lv_table_set_cell_value(table, 1, 2, temp_buffer3);
 }
 
-void tv_event_cb(lv_obj_t *obj, lv_event_t event)
+void tabviewEventCallback(lv_obj_t *obj, lv_event_t event)
 {
     if (event == LV_EVENT_VALUE_CHANGED)
     {
-        buzz_note(NOTE_C6);
+        buzzNote(NOTE_C6);
     }
 }
 
 void guiInit()
 {
     createTabview(scr);
-    createStatusLabel(scr);
+    createstatusLabel(scr);
     createIndicator(scr);
     createTabs(tabview);
     createTemperatureMeter(homeTab);
@@ -361,13 +363,13 @@ void guiInit()
     createDropdown(profileTab);
     createLoadButton(profileTab);
     createChart(chartTab);
-    createStartButtonLabel(startbtn);
-    createLoadButtonLabel(loadbtn);
+    createStartButtonLabel(startButton);
+    createLoadButtonLabel(loadButton);
     createClockLabel(scr);
-    createButtonMatrix(miscTab);
+    createbuttonMatrix(miscTab);
 }
 
-void ButtonMatrixEvent(lv_obj_t *obj, lv_event_t event)
+void buttonMatrixEvent(lv_obj_t *obj, lv_event_t event)
 {
     if (event == LV_EVENT_VALUE_CHANGED)
     {
@@ -376,8 +378,8 @@ void ButtonMatrixEvent(lv_obj_t *obj, lv_event_t event)
         {
             for (int i = 0; i < 40; i++)
             {
-                lv_chart_set_next(chart, ser1, 0);
-                lv_chart_set_next(chart, ser2, 0);
+                lv_chart_set_next(chart, chartSeriesOne, 0);
+                lv_chart_set_next(chart, chartSeriesTwo, 0);
             }
             lv_chart_refresh(chart);
         }
@@ -385,7 +387,7 @@ void ButtonMatrixEvent(lv_obj_t *obj, lv_event_t event)
     }
 }
 
-void StartEvent(lv_obj_t *obj, lv_event_t event)
+void startEvent(lv_obj_t *obj, lv_event_t event)
 {
 
     if (event == LV_EVENT_CLICKED)
@@ -401,25 +403,25 @@ void StartEvent(lv_obj_t *obj, lv_event_t event)
         {
             currentPhase = PREHEAT;
             Serial.println("Process started.");
-            lv_label_set_text(startbtnlabel, "STOP");
+            lv_label_set_text(startButtonlabel, "STOP");
         }
         else
         {
             currentPhase = COOLDOWN;
             Serial.println("aborted.. cooling down");
-            lv_label_set_text(startbtnlabel, "START");
+            lv_label_set_text(startButtonlabel, "START");
         }
     }
 }
 
-void profile_handler(lv_obj_t *obj, lv_event_t event)
+void profileHandler(lv_obj_t *obj, lv_event_t event)
 {
     if (event == LV_EVENT_VALUE_CHANGED)
     {
         // TODO load profile into table
         char buf[32];
         lv_dropdown_get_selected_str(obj, buf, sizeof(buf));
-        profile_dropdown_option = lv_dropdown_get_selected(obj);
+        profileDropdownOption = lv_dropdown_get_selected(obj);
         printf("Option: %s\n", buf);
     }
 }
@@ -432,37 +434,37 @@ void loaderEvent(lv_obj_t *obj, lv_event_t event)
         if (currentPhase == IDLE)
         {
 
-            if (profile_dropdown_option == 0)
+            if (profileDropdownOption == 0)
             {
                 setProfile(leaded);
             }
-            if (profile_dropdown_option == 1)
+            if (profileDropdownOption == 1)
             {
                 setProfile(leadFree);
             }
-            if (profile_dropdown_option == 2)
+            if (profileDropdownOption == 2)
             {
                 setProfile(temper);
             }
-            if (profile_dropdown_option == 3)
+            if (profileDropdownOption == 3)
             {
                 setProfile(custom);
             }
-            buzz_multiple_times(profile_dropdown_option + 1);
-            updateTableContent(currentProfile.preheatTime, currentProfile.preheatTemp, currentProfile.soakTime, currentProfile.soakTemp, currentProfile.reflowTime, currentProfile.reflowTemp);
+            buzzMultipleTimes(profileDropdownOption + 1);
+            updateTableContent(currentProfile.preheatTime, currentProfile.preheatTemperature, currentProfile.soakTime, currentProfile.soakTemperature, currentProfile.reflowTime, currentProfile.reflowTemperature);
             dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / datapoints);
             //Serial.println(dataPointDuration);
         }
         else
         {
 
-            buzzeralarm();
+            buzzAlarm();
             Serial.println("CANT CHANGE PROFILE WHILE NOT IN IDLE!");
         }
     }
 }
 
-void DisplayFlush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
+void displayFlush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_p)
 {
     uint32_t w = (area->x2 - area->x1 + 1);
     uint32_t h = (area->y2 - area->y1 + 1);
@@ -474,7 +476,8 @@ void DisplayFlush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color_
 
     lv_disp_flush_ready(disp);
 }
-bool TouchpadRead(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
+
+bool touchpadRead(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 {
     uint16_t touchX, touchY;
 
@@ -509,11 +512,12 @@ bool TouchpadRead(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
 
     return false; /*Return `false` because we are not buffering and no more data to read*/
 }
+
 void setCallbacks()
 {
-    lv_obj_set_event_cb(tabview, tv_event_cb);
-    lv_obj_set_event_cb(startbtn, StartEvent);
-    lv_obj_set_event_cb(loadbtn, loaderEvent);
-    lv_obj_set_event_cb(buttonmatrix, ButtonMatrixEvent);
-    lv_obj_set_event_cb(ddlist, profile_handler);
+    lv_obj_set_event_cb(tabview, tabviewEventCallback);
+    lv_obj_set_event_cb(startButton, startEvent);
+    lv_obj_set_event_cb(loadButton, loaderEvent);
+    lv_obj_set_event_cb(buttonMatrix, buttonMatrixEvent);
+    lv_obj_set_event_cb(dropdownList, profileHandler);
 }

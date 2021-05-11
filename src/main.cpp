@@ -1,11 +1,8 @@
 #include <Arduino.h>
 #include <SPI.h>
-#include <lvgl.h>
-#include <TFT_eSPI.h>
 #include <Wire.h>
 #include <RTClib.h>
 #include <max6675.h>
-#include <tone32.h>
 #include <PID_v1.h>
 #include <Plotter.h>
 
@@ -27,28 +24,15 @@ Plotter p;
 #endif
 
 MAX6675 thermocouple(THERMOCOUPLE_CLOCK_PIN, THERMOCOUPLE_CHIP_SELECT_PIN, THERMOCOUPLE_DATA_OUT_PIN);
+
 RTC_DS3231 rtc;
 
-float currentTemp;
-float currentTargetTemp;
-//Bool for checking if SOLID_STATE_RELAY_OUTPUT_PIN is on or off
+float currentTemperature;
+float currentTargetTemperature;
 boolean thermocoupleError = false;
-//Indicator -> Set preheattemp to ambienttemp to get THAT SWEET GERADE
-boolean preTempSet = false;
-
-//chart
+boolean preTemperatureSet = false;
 
 int dataPointIterator = 0;
-
-#if USE_LV_LOG != 0
-/* Serial debugging */
-void my_print(lv_log_level_t level, const char *file, uint32_t line, const char *dsc)
-{
-
-    Serial.printf("%s@%d->%s\r\n", file, line, dsc);
-    Serial.flush();
-}
-#endif
 
 void espPinInit()
 {
@@ -92,7 +76,7 @@ void resetStates()
     Output = 0;
 
     digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
-    buzzeralarm();
+    buzzAlarm();
 
     currentProfile.cooldownCounter = 0;
     currentProfile.preheatCounter = 0;
@@ -100,9 +84,9 @@ void resetStates()
     currentProfile.reflowCounter = 0;
     dataPointIterator = 0;
 
-    lv_label_set_text(statuslabel, "Status: COOLDOWN");
-    lv_label_set_text(startbtnlabel, "START");
-    lv_btn_set_state(startbtn, LV_BTN_STATE_CHECKED_RELEASED);
+    lv_label_set_text(statusLabel, "Status: COOLDOWN");
+    lv_label_set_text(startButtonlabel, "START");
+    lv_btn_set_state(startButton, LV_BTN_STATE_CHECKED_RELEASED);
 }
 
 void resetMessages()
@@ -117,9 +101,9 @@ void resetMessages()
 
 void serialPrintLog()
 {
-    Serial.print(currentTemp);
+    Serial.print(currentTemperature);
     Serial.print("    ");
-    Serial.print(currentTargetTemp);
+    Serial.print(currentTargetTemperature);
     Serial.print("    ");
     Serial.print(Output);
     Serial.print("    ");
@@ -141,9 +125,9 @@ void updateClock()
     lv_label_set_text(clockLabel, now.toString(timeBuffer));
 }
 
-float calculateTargetTemp()
+float calculateTargetTemperature()
 {
-    float ret = currentProfile.preheatTemp + ((currentProfile.soakTemp - currentProfile.preheatTemp) / currentProfile.preheatTime) * currentProfile.preheatCounter;
+    float ret = currentProfile.preheatTemperature + ((currentProfile.soakTemperature - currentProfile.preheatTemperature) / currentProfile.preheatTime) * currentProfile.preheatCounter;
 
     return ret;
 }
@@ -159,16 +143,16 @@ void setup()
     Serial.begin(115200);
 #endif
 
-    tft_init();
+    tftInit();
     lv_init();
-    lv_theme_init();
+    lvThemeInit();
     espPinInit();
-    buzz_startup();
+    buzzStartup();
 
     initDisplay();
 
     initDriver();
-    screen_init();
+    screenInit();
     guiInit();
     setCallbacks();
 
@@ -182,20 +166,20 @@ void setup()
 void loop()
 {
 #if USE_PROCESSING_PLOTTER != 0
-    x = currentTemp;
-    y = currentTargetTemp;
+    x = currentTemperature;
+    y = currentTargetTemperature;
     p.Plot(); // usually called within loop()
 #endif
 
     currentTime = millis();
 
-    //Every 220 milliseconds
-    if (currentTime - previousFastIntervalEndTime >= quarterSecondInterval)
+    //Every 220 milliseconds (-> Datasheet MAX6675 -> max conversion time)
+    if (currentTime - previousFastIntervalEndTime >= temperatureUpdateInterval)
     {
 
-        currentTemp = thermocouple.readCelsius();
+        currentTemperature = thermocouple.readCelsius();
         updateTemperatureLabel(thermocouple.readCelsius());
-        lv_linemeter_set_value(temperature_meter, currentTemp);
+        lv_linemeter_set_value(temperatureMeter, currentTemperature);
         previousFastIntervalEndTime = currentTime;
     }
 
@@ -207,24 +191,24 @@ void loop()
         {
             currentPhase = COOLDOWN;
             Serial.println("THERMOCOUPLE NOT CONNECTED OR DAMAGED!");
-            lv_label_set_text(startbtnlabel, LV_SYMBOL_WARNING);
-            lv_label_set_text(indicatorlabel, LV_SYMBOL_WARNING);
+            lv_label_set_text(startButtonlabel, LV_SYMBOL_WARNING);
+            lv_label_set_text(indicatorLabel, LV_SYMBOL_WARNING);
         }
 
         if (processTimeCounter == dataPointIterator * dataPointDuration)
         {
-            lv_chart_set_next(chart, ser1, currentTemp);
-            lv_chart_set_next(chart, ser2, currentTargetTemp);
+            lv_chart_set_next(chart, chartSeriesOne, currentTemperature);
+            lv_chart_set_next(chart, chartSeriesTwo, currentTargetTemperature);
             lv_chart_refresh(chart);
             dataPointIterator++;
         }
 
-        if (currentTemp > max_process_temp)
+        if (currentTemperature > maxProcessTemperature)
         {
-            max_process_temp = currentTemp;
+            maxProcessTemperature = currentTemperature;
         }
 
-        Input = currentTemp;
+        Input = currentTemperature;
 
         updateClock();
         serialPrintLog();
@@ -234,11 +218,11 @@ void loop()
 
         case IDLE:
 
-            lv_label_set_text(indicatorlabel, LV_SYMBOL_MINUS);
-            currentTargetTemp = currentProfile.IDLETemp;
-            lv_label_set_text(statuslabel, "Status: IDLE");
+            lv_label_set_text(indicatorLabel, LV_SYMBOL_MINUS);
+            currentTargetTemperature = currentProfile.IdleTemperature;
+            lv_label_set_text(statusLabel, "Status: IDLE");
             processTimeCounter = 0;
-            lv_label_set_text(indicatorlabel, LV_SYMBOL_MINUS);
+            lv_label_set_text(indicatorLabel, LV_SYMBOL_MINUS);
             if (idleMessageSent == false)
             {
                 Serial.println("STATUS: IDLE");
@@ -251,17 +235,17 @@ void loop()
 
             processTimeCounter++;
             myPID.SetTunings(PID_KP_PREHEAT, PID_KI_PREHEAT, PID_KD_PREHEAT);
-            lv_label_set_text(statuslabel, "Status: PREHEAT");
+            lv_label_set_text(statusLabel, "Status: PREHEAT");
 
-            if (!preTempSet)
+            if (!preTemperatureSet)
             {
-                currentProfile.preheatTemp = currentTemp;
-                preTempSet = true;
+                currentProfile.preheatTemperature = currentTemperature;
+                preTemperatureSet = true;
             }
 
             if (currentProfile.preheatCounter < currentProfile.preheatTime)
             {
-                currentTargetTemp = calculateTargetTemp();
+                currentTargetTemperature = calculateTargetTemperature();
                 if (!preheatMessageSent)
                 {
                     Serial.println("STATUS: PREHEAT");
@@ -275,17 +259,17 @@ void loop()
                 preheatMessageSent = false;
                 currentPhase = SOAK;
             }
-            Setpoint = currentTargetTemp;
+            Setpoint = currentTargetTemperature;
             break;
 
         case SOAK:
 
             processTimeCounter++;
             myPID.SetTunings(PID_KP_SOAK, PID_KI_SOAK, PID_KD_SOAK);
-            lv_label_set_text(statuslabel, "Status: SOAK");
+            lv_label_set_text(statusLabel, "Status: SOAK");
             if (currentProfile.soakCounter < currentProfile.soakTime)
             {
-                currentTargetTemp = currentProfile.soakTemp;
+                currentTargetTemperature = currentProfile.soakTemperature;
 
                 if (!soakMessageSent)
                 {
@@ -301,23 +285,23 @@ void loop()
                 soakMessageSent = false;
                 currentPhase = REFLOW;
             }
-            Setpoint = currentTargetTemp;
+            Setpoint = currentTargetTemperature;
             break;
 
         case REFLOW:
 
             processTimeCounter++;
             myPID.SetTunings(PID_KP_REFLOW, PID_KI_REFLOW, PID_KD_REFLOW);
-            lv_label_set_text(statuslabel, "Status: REFLOW");
+            lv_label_set_text(statusLabel, "Status: REFLOW");
             if (currentProfile.reflowCounter < currentProfile.reflowTime)
             {
-                if (currentTargetTemp < (currentProfile.reflowTemp - 2))
+                if (currentTargetTemperature < (currentProfile.reflowTemperature - 2))
                 {
-                    currentTargetTemp = currentTargetTemp + 2;
+                    currentTargetTemperature = currentTargetTemperature + 2;
                 }
                 else
                 {
-                    currentTargetTemp = currentProfile.reflowTemp;
+                    currentTargetTemperature = currentProfile.reflowTemperature;
                 }
 
                 if (reflowMessageSent == false)
@@ -333,24 +317,24 @@ void loop()
                 reflowMessageSent = false;
                 currentPhase = COOLDOWN;
             }
-            Setpoint = currentTargetTemp;
+            Setpoint = currentTargetTemperature;
             break;
 
         case COOLDOWN:
             resetStates();
             if (!cooldownMessageSent)
             {
-                currentTargetTemp = currentProfile.IDLETemp;
+                currentTargetTemperature = currentProfile.IdleTemperature;
                 Serial.println("STATUS: COOLDOWN");
                 cooldownMessageSent = true;
             }
             currentProfile.cooldownCounter++;
-            if (currentProfile.cooldownCounter >= currentProfile.cooldownTime || currentTemp < 50.0)
+            if (currentProfile.cooldownCounter >= currentProfile.cooldownTime || currentTemperature < 50.0)
             {
                 currentProfile.cooldownCounter = 0;
                 resetMessages();
             }
-            Setpoint = currentTargetTemp;
+            Setpoint = currentTargetTemperature;
             break;
         }
 
@@ -369,13 +353,13 @@ void loop()
         }
         if (Output > millis() - windowStartTime)
         {
-            lv_label_set_text(indicatorlabel, LV_SYMBOL_UP);
+            lv_label_set_text(indicatorLabel, LV_SYMBOL_UP);
             digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, HIGH);
         }
         else
         {
             digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
-            lv_label_set_text(indicatorlabel, LV_SYMBOL_DOWN);
+            lv_label_set_text(indicatorLabel, LV_SYMBOL_DOWN);
         }
     }
 

@@ -17,17 +17,17 @@ profile currentProfile =
         .reflowCounter = 0,
         .cooldownCounter = 0,
 
-        .IDLETemp = 0,
-        .preheatTemp = 30,
-        .soakTemp = 150,
-        .reflowTemp = 230};
+        .IdleTemperature = 0,
+        .preheatTemperature = 30,
+        .soakTemperature = 150,
+        .reflowTemperature = 230};
 
-void setProfile(float *profileArray)
+void setProfile(float profileArray[])
 {
     currentProfile.preheatTime = profileArray[0];
     currentProfile.soakTime = profileArray[1];
     currentProfile.reflowTime = profileArray[2];
-    currentProfile.preheatTemp = profileArray[3];
-    currentProfile.soakTemp = profileArray[4];
-    currentProfile.reflowTemp = profileArray[5];
+    currentProfile.preheatTemperature = profileArray[3];
+    currentProfile.soakTemperature = profileArray[4];
+    currentProfile.reflowTemperature = profileArray[5];
 }
