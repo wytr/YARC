@@ -31,9 +31,9 @@ lv_chart_series_t *chartSeriesTwo;
 lv_style_t st;
 lv_obj_t *dropdownList;
 
-const int datapoints = 40;
-int profile_chart[datapoints];
-int actual_chart[datapoints];
+const int dataPoints = 40;
+int targetChart[dataPoints];
+int actualChart[dataPoints];
 int profileDropdownOption;
 int dataPointDuration = 2;
 
@@ -167,13 +167,13 @@ void createTable(lv_obj_t *parent)
 void createChart(lv_obj_t *parent)
 {
 
-    for (int i = 0; i < datapoints; i++) // ...initialize it
+    for (int i = 0; i < dataPoints; i++) // ...initialize it
     {
-        profile_chart[i] = 0;
+        targetChart[i] = 0;
     }
-    for (int i = 0; i < datapoints; i++) // ...initialize it
+    for (int i = 0; i < dataPoints; i++) // ...initialize it
     {
-        actual_chart[i] = 0;
+        actualChart[i] = 0;
     }
 
     chart = lv_chart_create(chartTab, NULL);
@@ -181,7 +181,7 @@ void createChart(lv_obj_t *parent)
     lv_obj_align(chart, NULL, LV_ALIGN_CENTER, 0, 0);
     lv_chart_set_type(chart, LV_CHART_TYPE_LINE); /*Show lines and points too*/
     lv_chart_set_range(chart, 0, 300);
-    lv_chart_set_point_count(chart, datapoints);
+    lv_chart_set_point_count(chart, dataPoints);
 
     //nicht auswählbar -> scrollen funktioniert über diagramm
     lv_obj_set_click(chart, false);
@@ -203,16 +203,16 @@ void createChart(lv_obj_t *parent)
     /*Set the next points on 'chartSeriesOne'*/
     //const int SIZE = 20;
 
-    for (int i = 0; i < datapoints; i++)
+    for (int i = 0; i < dataPoints; i++)
     {
-        lv_chart_set_next(chart, chartSeriesOne, profile_chart[i]);
-        lv_chart_set_next(chart, chartSeriesTwo, actual_chart[i]);
+        lv_chart_set_next(chart, chartSeriesOne, targetChart[i]);
+        lv_chart_set_next(chart, chartSeriesTwo, actualChart[i]);
     }
 
     /*Directly set points on 'chartSeriesTwo'
     for (int j = 0; j < SIZE; j++)
     {
-        chartSeriesTwo->points[j] = actual_chart[j];
+        chartSeriesTwo->points[j] = actualChart[j];
     }
     */
     lv_chart_refresh(chart); /*Required after direct set*/
@@ -452,7 +452,7 @@ void loaderEvent(lv_obj_t *obj, lv_event_t event)
             }
             buzzMultipleTimes(profileDropdownOption + 1);
             updateTableContent(currentProfile.preheatTime, currentProfile.preheatTemperature, currentProfile.soakTime, currentProfile.soakTemperature, currentProfile.reflowTime, currentProfile.reflowTemperature);
-            dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / datapoints);
+            dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / dataPoints);
             //Serial.println(dataPointDuration);
         }
         else

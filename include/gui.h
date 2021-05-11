@@ -29,9 +29,9 @@ extern lv_chart_series_t *chartSeriesTwo;
 extern lv_style_t st;
 extern lv_obj_t *dropdownList;
 
-extern const int datapoints;
-extern int profile_chart[];
-extern int actual_chart[];
+extern const int dataPoints;
+extern int targetChart[];
+extern int actualChart[];
 extern int dataPointDuration;
 
 void tftInit();

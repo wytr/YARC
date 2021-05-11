@@ -160,7 +160,7 @@ void setup()
 
     pidSetup();
 
-    dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / datapoints);
+    dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / dataPoints);
 }
 
 void loop()
