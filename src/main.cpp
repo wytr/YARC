@@ -14,22 +14,9 @@
 #include "gui.h"
 #include "phase.h"
 #include "profile.h"
+#include "pid_setup.h"
 
-#define PID_SAMPLE_TIME 1000
 #define USE_PROCESSING_PLOTTER 0
-// ***** PRE-HEAT STAGE *****
-#define PID_KP_PREHEAT 100
-#define PID_KI_PREHEAT 0.025
-#define PID_KD_PREHEAT 20
-// ***** SOAKING STAGE *****
-#define PID_KP_SOAK 300
-#define PID_KI_SOAK 0.05
-#define PID_KD_SOAK 250
-// ***** REFLOW STAGE *****
-#define PID_KP_REFLOW 300
-#define PID_KI_REFLOW 0.05
-#define PID_KD_REFLOW 350
-#define PID_SAMPLE_TIME 1000
 
 #if USE_PROCESSING_PLOTTER != 0
 
@@ -39,39 +26,8 @@ Plotter p;
 
 #endif
 
-//PID
-double Setpoint, Input, Output;
-double Kp = PID_KP_PREHEAT, Ki = PID_KI_PREHEAT, Kd = PID_KD_PREHEAT;
-PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
-int WindowSize = 2000;
-unsigned long windowStartTime;
-
 MAX6675 thermocouple(THERMOCOUPLE_CLOCK_PIN, THERMOCOUPLE_CHIP_SELECT_PIN, THERMOCOUPLE_DATA_OUT_PIN);
-
-//RTC
 RTC_DS3231 rtc;
-
-int processTimeCounter = 0;
-//To-Do: implement this to keep track of maximum temperature per process
-float max_process_temp = 0;
-
-//Messageindicator for serialprint
-bool idleMessageSent = false;
-bool preheatMessageSent = false;
-bool soakMessageSent = false;
-bool reflowMessageSent = false;
-bool cooldownMessageSent = false;
-
-//const char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-
-//Timerstuff
-unsigned long currentTime = 0;
-unsigned long previousIntervalEndTime = 0;
-unsigned long previous_thermocouple_check_time = 0;
-unsigned long previousTime3 = 0;
-unsigned long oneSecondInterval = 1000;
-unsigned long halfsecond = 500;
-unsigned long tenSecondInterval = 10000;
 
 float currentTemp;
 float currentTargetTemp;
@@ -131,6 +87,67 @@ void rtcConnect()
     }
 }
 
+void resetStates()
+{
+    Output = 0;
+
+    digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
+    buzzeralarm();
+
+    currentProfile.cooldownCounter = 0;
+    currentProfile.preheatCounter = 0;
+    currentProfile.soakCounter = 0;
+    currentProfile.reflowCounter = 0;
+    dataPointIterator = 0;
+
+    lv_label_set_text(statuslabel, "Status: COOLDOWN");
+    lv_label_set_text(startbtnlabel, "START");
+    lv_btn_set_state(startbtn, LV_BTN_STATE_CHECKED_RELEASED);
+}
+
+void resetMessages()
+{
+    idleMessageSent = false;
+    preheatMessageSent = false;
+    soakMessageSent = false;
+    reflowMessageSent = false;
+    cooldownMessageSent = false;
+    currentPhase = IDLE;
+}
+
+void serialPrintLog()
+{
+    Serial.print(currentTemp);
+    Serial.print("    ");
+    Serial.print(currentTargetTemp);
+    Serial.print("    ");
+    Serial.print(Output);
+    Serial.print("    ");
+    Serial.print("processtime = ");
+    Serial.print(processTimeCounter);
+    Serial.print("    ");
+    Serial.print(" Kp = ");
+    Serial.print(myPID.GetKp());
+    Serial.print(" Ki = ");
+    Serial.print(myPID.GetKi(), 4);
+    Serial.print(" Kd = ");
+    Serial.println(myPID.GetKd());
+}
+
+void updateClock()
+{
+    char timeBuffer[9] = "hh:mm:ss";
+    DateTime now = rtc.now();
+    lv_label_set_text(clockLabel, now.toString(timeBuffer));
+}
+
+float calculateTargetTemp()
+{
+    float ret = currentProfile.preheatTemp + ((currentProfile.soakTemp - currentProfile.preheatTemp) / currentProfile.preheatTime) * currentProfile.preheatCounter;
+
+    return ret;
+}
+
 void setup()
 {
 #if USE_PROCESSING_PLOTTER != 0
@@ -153,7 +170,6 @@ void setup()
     initDriver();
     screen_init();
     guiInit();
-    //CALLBACKS IMPEMENTATION OF setCallbacks() not finished
     setCallbacks();
 
     rtcConnect();
@@ -173,6 +189,17 @@ void loop()
 
     currentTime = millis();
 
+    //Every 220 milliseconds
+    if (currentTime - previousFastIntervalEndTime >= quarterSecondInterval)
+    {
+
+        currentTemp = thermocouple.readCelsius();
+        updateTemperatureLabel(thermocouple.readCelsius());
+        lv_linemeter_set_value(temperature_meter, currentTemp);
+        previousFastIntervalEndTime = currentTime;
+    }
+
+    //Every second
     if (currentTime - previousIntervalEndTime >= oneSecondInterval)
     {
 
@@ -192,8 +219,6 @@ void loop()
             dataPointIterator++;
         }
 
-        currentTemp = thermocouple.readCelsius();
-
         if (currentTemp > max_process_temp)
         {
             max_process_temp = currentTemp;
@@ -201,29 +226,8 @@ void loop()
 
         Input = currentTemp;
 
-        char buf1[9] = "hh:mm";
-        DateTime now = rtc.now();
-
-        lv_label_set_text(clockLabel, now.toString(buf1));
-
-        Serial.print(currentTemp);
-        Serial.print("    ");
-        Serial.print(currentTargetTemp);
-        Serial.print("    ");
-        Serial.print(Output);
-        Serial.print("    ");
-        Serial.print("processtime = ");
-        Serial.print(processTimeCounter);
-        Serial.print("    ");
-        Serial.print(" Kp = ");
-        Serial.print(myPID.GetKp());
-        Serial.print(" Ki = ");
-        Serial.print(myPID.GetKi(), 4);
-        Serial.print(" Kd = ");
-        Serial.println(myPID.GetKd());
-
-        lv_linemeter_set_value(temperature_meter, currentTemp);
-        updateTemperatureLabel(thermocouple.readCelsius());
+        updateClock();
+        serialPrintLog();
 
         switch (currentPhase)
         {
@@ -257,7 +261,7 @@ void loop()
 
             if (currentProfile.preheatCounter < currentProfile.preheatTime)
             {
-                currentTargetTemp = currentProfile.preheatTemp + ((currentProfile.soakTemp - currentProfile.preheatTemp) / currentProfile.preheatTime) * currentProfile.preheatCounter;
+                currentTargetTemp = calculateTargetTemp();
                 if (!preheatMessageSent)
                 {
                     Serial.println("STATUS: PREHEAT");
@@ -333,19 +337,7 @@ void loop()
             break;
 
         case COOLDOWN:
-            Output = 0;
-            digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
-            buzzeralarm();
-            currentProfile.cooldownCounter = 0;
-            currentProfile.preheatCounter = 0;
-            currentProfile.soakCounter = 0;
-            currentProfile.reflowCounter = 0;
-            dataPointIterator = 0;
-
-            lv_label_set_text(statuslabel, "Status: COOLDOWN");
-            lv_label_set_text(startbtnlabel, "START");
-            lv_btn_set_state(startbtn, LV_BTN_STATE_CHECKED_RELEASED);
-
+            resetStates();
             if (!cooldownMessageSent)
             {
                 currentTargetTemp = currentProfile.IDLETemp;
@@ -356,12 +348,7 @@ void loop()
             if (currentProfile.cooldownCounter >= currentProfile.cooldownTime || currentTemp < 50.0)
             {
                 currentProfile.cooldownCounter = 0;
-                idleMessageSent = false;
-                preheatMessageSent = false;
-                soakMessageSent = false;
-                reflowMessageSent = false;
-                cooldownMessageSent = false;
-                currentPhase = IDLE;
+                resetMessages();
             }
             Setpoint = currentTargetTemp;
             break;
@@ -370,6 +357,7 @@ void loop()
         previousIntervalEndTime = currentTime;
     }
 
+    //While process is running
     if (currentPhase != IDLE && currentPhase != COOLDOWN)
     {
 
