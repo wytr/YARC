@@ -1,4 +1,4 @@
-# YARC - Yet another reflow controller
+# YARC - Yet Another Reflow Controller
 
 ### Setup Instructions
 
