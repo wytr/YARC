@@ -3,9 +3,11 @@
 #include <Wire.h>
 #include <RTClib.h>
 #include <PID_v1.h>
-#include <Plotter.h>
 #include <WiFi.h>
 #include <SPIFFS.h>
+#include <WiFi.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
 
 #include "periphery.h"
 #include "buzz.h"
@@ -13,21 +15,6 @@
 #include "phase.h"
 #include "profile.h"
 #include "pid_setup.h"
-
-#include <WiFi.h>
-#include <AsyncTCP.h>
-
-#include <ESPAsyncWebServer.h>
-
-#define USE_PROCESSING_PLOTTER 0
-
-#if USE_PROCESSING_PLOTTER != 0
-
-double x;
-double y;
-Plotter p;
-
-#endif
 
 float currentTemperature;
 float currentTargetTemperature;
@@ -59,7 +46,6 @@ void mainSystemSetup()
 
 void mainSystem()
 {
-
     currentTime = millis();
 
     //Every 220 milliseconds (-> Datasheet MAX6675 -> max conversion time)
@@ -257,28 +243,12 @@ void mainSystem()
 
 void setup()
 {
-#if USE_PROCESSING_PLOTTER != 0
-    p.Begin();
-    p.AddTimeGraph("PID-Regler", 1000, "momentane Temperatur", x, "Zieltemperatur", y);
-#endif
-
-#if USE_PROCESSING_PLOTTER == 0
     Serial.begin(115200);
-#endif
-
     mainSystemSetup();
 }
 
 void loop()
 {
-
-#if USE_PROCESSING_PLOTTER != 0
-    x = currentTemperature;
-    y = currentTargetTemperature;
-    p.Plot(); // usually called within loop()
-#endif
-
     mainSystem();
-
     lv_task_handler();
 }
