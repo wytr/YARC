@@ -29,4 +29,6 @@ extern bool soakMessageSent;
 extern bool reflowMessageSent;
 extern bool cooldownMessageSent;
 
+void resetMessages();
+
 #endif

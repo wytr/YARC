@@ -2,16 +2,22 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <RTClib.h>
-#include <max6675.h>
 #include <PID_v1.h>
 #include <Plotter.h>
+#include <WiFi.h>
+#include <SPIFFS.h>
 
-#include "pindefines.h"
+#include "periphery.h"
 #include "buzz.h"
 #include "gui.h"
 #include "phase.h"
 #include "profile.h"
 #include "pid_setup.h"
+
+#include <WiFi.h>
+#include <AsyncTCP.h>
+
+#include <ESPAsyncWebServer.h>
 
 #define USE_PROCESSING_PLOTTER 0
 
@@ -23,125 +29,13 @@ Plotter p;
 
 #endif
 
-MAX6675 thermocouple(THERMOCOUPLE_CLOCK_PIN, THERMOCOUPLE_CHIP_SELECT_PIN, THERMOCOUPLE_DATA_OUT_PIN);
-
-RTC_DS3231 rtc;
-
 float currentTemperature;
 float currentTargetTemperature;
 boolean thermocoupleError = false;
 boolean preTemperatureSet = false;
 
-int dataPointIterator = 0;
-
-void espPinInit()
+void mainSystemSetup()
 {
-    pinMode(THERMOCOUPLE_VCC_PIN, OUTPUT);
-    digitalWrite(THERMOCOUPLE_VCC_PIN, HIGH);
-    pinMode(SOLID_STATE_RELAY_OUTPUT_PIN, OUTPUT);
-}
-
-void pidSetup()
-{
-    windowStartTime = millis();
-    Setpoint = 0;
-    myPID.SetOutputLimits(0, WindowSize);
-    myPID.SetSampleTime(PID_SAMPLE_TIME);
-    myPID.SetMode(AUTOMATIC);
-}
-
-void rtcConnect()
-{
-
-    if (!rtc.begin())
-    {
-        Serial.println("Couldn't find RTC");
-        while (1)
-            ;
-    }
-
-    if (rtc.lostPower())
-    {
-        Serial.println("RTC lost power, lets set the time!");
-        // following line sets the RTC to the date &amp; time this sketch was compiled
-        rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-        // This line sets the RTC with an explicit date &amp; time, for example to set
-        // January 21, 2014 at 3am you would call:
-        // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-    }
-}
-
-void resetStates()
-{
-    Output = 0;
-
-    digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
-    buzzAlarm();
-
-    currentProfile.cooldownCounter = 0;
-    currentProfile.preheatCounter = 0;
-    currentProfile.soakCounter = 0;
-    currentProfile.reflowCounter = 0;
-    dataPointIterator = 0;
-
-    lv_label_set_text(statusLabel, "Status: COOLDOWN");
-    lv_label_set_text(startButtonlabel, "START");
-    lv_btn_set_state(startButton, LV_BTN_STATE_CHECKED_RELEASED);
-}
-
-void resetMessages()
-{
-    idleMessageSent = false;
-    preheatMessageSent = false;
-    soakMessageSent = false;
-    reflowMessageSent = false;
-    cooldownMessageSent = false;
-    currentPhase = IDLE;
-}
-
-void serialPrintLog()
-{
-    Serial.print(currentTemperature);
-    Serial.print("    ");
-    Serial.print(currentTargetTemperature);
-    Serial.print("    ");
-    Serial.print(Output);
-    Serial.print("    ");
-    Serial.print("processtime = ");
-    Serial.print(processTimeCounter);
-    Serial.print("    ");
-    Serial.print(" Kp = ");
-    Serial.print(myPID.GetKp());
-    Serial.print(" Ki = ");
-    Serial.print(myPID.GetKi(), 4);
-    Serial.print(" Kd = ");
-    Serial.println(myPID.GetKd());
-}
-
-void updateClock()
-{
-    char timeBuffer[9] = "hh:mm:ss";
-    DateTime now = rtc.now();
-    lv_label_set_text(clockLabel, now.toString(timeBuffer));
-}
-
-float calculateTargetTemperature()
-{
-    float ret = currentProfile.preheatTemperature + ((currentProfile.soakTemperature - currentProfile.preheatTemperature) / currentProfile.preheatTime) * currentProfile.preheatCounter;
-
-    return ret;
-}
-
-void setup()
-{
-#if USE_PROCESSING_PLOTTER != 0
-    p.Begin();
-    p.AddTimeGraph("PID-Regler", 1000, "momentane Temperatur", x, "Zieltemperatur", y);
-#endif
-
-#if USE_PROCESSING_PLOTTER == 0
-    Serial.begin(115200);
-#endif
 
     tftInit();
     lv_init();
@@ -163,13 +57,8 @@ void setup()
     dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / dataPoints);
 }
 
-void loop()
+void mainSystem()
 {
-#if USE_PROCESSING_PLOTTER != 0
-    x = currentTemperature;
-    y = currentTargetTemperature;
-    p.Plot(); // usually called within loop()
-#endif
 
     currentTime = millis();
 
@@ -211,7 +100,6 @@ void loop()
         Input = currentTemperature;
 
         updateClock();
-        serialPrintLog();
 
         switch (currentPhase)
         {
@@ -365,6 +253,32 @@ void loop()
 
     else
         digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
+}
+
+void setup()
+{
+#if USE_PROCESSING_PLOTTER != 0
+    p.Begin();
+    p.AddTimeGraph("PID-Regler", 1000, "momentane Temperatur", x, "Zieltemperatur", y);
+#endif
+
+#if USE_PROCESSING_PLOTTER == 0
+    Serial.begin(115200);
+#endif
+
+    mainSystemSetup();
+}
+
+void loop()
+{
+
+#if USE_PROCESSING_PLOTTER != 0
+    x = currentTemperature;
+    y = currentTargetTemperature;
+    p.Plot(); // usually called within loop()
+#endif
+
+    mainSystem();
 
     lv_task_handler();
 }

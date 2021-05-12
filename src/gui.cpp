@@ -1,10 +1,10 @@
+#include "periphery.h"
 #include "gui.h"
 #include "Tone32.h"
 #include "buzz.h"
 #include "phase.h"
 #include "profile.h"
 
-TFT_eSPI tft = TFT_eSPI();
 lv_disp_buf_t displayBuffer;
 lv_color_t buf[LV_HOR_RES_MAX * 10];
 lv_obj_t *scr;
@@ -51,18 +51,9 @@ static const char *btnm_map[] = {"1", "2", "3", "\n",
                                  "7", "8", "9", "\n",
                                  "0", "<", "OK", ""};
 
-void tftInit()
-{
-
-    tft.begin();        /* TFT init */
-    tft.setRotation(0); /* Landscape orientation  = 1*/
-    uint16_t calData[5] = {275, 3620, 264, 3532, 2};
-    tft.setTouch(calData);
-    lv_disp_buf_init(&displayBuffer, buf, NULL, LV_HOR_RES_MAX * 10);
-}
-
 void initDisplay()
 {
+    lv_disp_buf_init(&displayBuffer, buf, NULL, LV_HOR_RES_MAX * 10);
     lv_disp_drv_t disp_drv;
     lv_disp_drv_init(&disp_drv);
     disp_drv.hor_res = LV_HOR_RES_MAX;
@@ -310,6 +301,13 @@ void updateTemperatureLabel(float value)
     char buffer[12] = {0};
     snprintf(buffer, sizeof(buffer), "%.2f°C", value);
     lv_label_set_text(temperatureLabel, buffer);
+}
+
+void updateClock()
+{
+    char timeBuffer[9] = "hh:mm:ss";
+    DateTime now = rtc.now();
+    lv_label_set_text(clockLabel, now.toString(timeBuffer));
 }
 
 void updateTableContent(float time1, float temp1, float time2, float temp2, float time3, float temp3)

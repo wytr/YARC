@@ -1,5 +1,5 @@
 #include <tone32.h>
-#include "pindefines.h"
+#include "periphery.h"
 
 void buzzer()
 {

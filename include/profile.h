@@ -7,6 +7,7 @@ extern float leaded[6];
 extern float leadFree[6];
 extern float temper[6];
 extern float custom[6];
+extern int dataPointIterator;
 
 struct profile
 {
@@ -29,5 +30,7 @@ struct profile
 extern profile currentProfile;
 
 void setProfile(float *profileArray);
+float calculateTargetTemperature();
+void resetStates();
 
 #endif

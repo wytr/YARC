@@ -1,9 +1,7 @@
 #ifndef YARC_GUI_H
 #define YARC_GUI_H
 #include <lvgl.h>
-#include <TFT_eSPI.h>
 
-extern TFT_eSPI tft;
 extern lv_color_t buf[LV_HOR_RES_MAX * 10];
 extern lv_obj_t *scr;
 extern lv_theme_t *th;
@@ -34,13 +32,14 @@ extern int targetChart[];
 extern int actualChart[];
 extern int dataPointDuration;
 
-void tftInit();
+
 void initDisplay();
 void initDriver();
 void createTemperatureMeter(lv_obj_t *parent);
 void lvThemeInit();
 void screenInit();
 void createTabview(lv_obj_t *parent);
+
 void createTabs(lv_obj_t *parent);
 void createTable(lv_obj_t *parent);
 void createChart(lv_obj_t *parent);
@@ -55,6 +54,7 @@ void createClockLabel(lv_obj_t *parent);
 void createbuttonMatrix(lv_obj_t *parent);
 void createDropdown(lv_obj_t *parent);
 void updateTemperatureLabel(float value);
+void updateClock();
 void updateTableContent(float time1, float temp1, float time2, float temp2, float time3, float temp3);
 void tabviewEventCallback(lv_obj_t *obj, lv_event_t event);
 void guiInit();

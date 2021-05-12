@@ -1,9 +1,16 @@
+#include <Arduino.h>
+#include "lvgl.h"
 #include "profile.h"
+#include "gui.h"
+#include "pid_setup.h"
+#include "buzz.h"
+#include "periphery.h"
 
 float leaded[6] = {60, 80, 60, 30, 150, 230};
 float leadFree[6] = {60, 80, 60, 30, 150, 250};
 float temper[6] = {120, 1000, 1000, 60, 60, 60};
 float custom[6] = {60, 80, 60, 30, 150, 230};
+int dataPointIterator = 0;
 
 profile currentProfile =
     {
@@ -30,4 +37,29 @@ void setProfile(float profileArray[])
     currentProfile.preheatTemperature = profileArray[3];
     currentProfile.soakTemperature = profileArray[4];
     currentProfile.reflowTemperature = profileArray[5];
+}
+
+float calculateTargetTemperature()
+{
+    float ret = currentProfile.preheatTemperature + ((currentProfile.soakTemperature - currentProfile.preheatTemperature) / currentProfile.preheatTime) * currentProfile.preheatCounter;
+
+    return ret;
+}
+
+void resetStates()
+{
+    Output = 0;
+
+    digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
+    buzzAlarm();
+
+    currentProfile.cooldownCounter = 0;
+    currentProfile.preheatCounter = 0;
+    currentProfile.soakCounter = 0;
+    currentProfile.reflowCounter = 0;
+    dataPointIterator = 0;
+
+    lv_label_set_text(statusLabel, "Status: COOLDOWN");
+    lv_label_set_text(startButtonlabel, "START");
+    lv_btn_set_state(startButton, LV_BTN_STATE_CHECKED_RELEASED);
 }

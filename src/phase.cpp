@@ -15,3 +15,13 @@ bool preheatMessageSent = false;
 bool soakMessageSent = false;
 bool reflowMessageSent = false;
 bool cooldownMessageSent = false;
+
+void resetMessages()
+{
+    idleMessageSent = false;
+    preheatMessageSent = false;
+    soakMessageSent = false;
+    reflowMessageSent = false;
+    cooldownMessageSent = false;
+    currentPhase = IDLE;
+}
