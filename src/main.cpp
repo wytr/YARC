@@ -25,8 +25,8 @@ boolean preTemperatureSet = false;
 
 AsyncWebServer server(80);
 
-const char *ssid = "blackmesaresearch_ap";
-const char *password = "zickigamorphkahlrevier";
+const char *ssid = "SSID";
+const char *password = "PASSWORD";
 
 const char *PARAM_MESSAGE = "message";
 
