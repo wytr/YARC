@@ -14,8 +14,10 @@ lv_obj_t *homeTab;
 lv_obj_t *profileTab;
 lv_obj_t *chartTab;
 lv_obj_t *miscTab;
+lv_obj_t *wifiTab;
 lv_obj_t *temperatureMeter;
 lv_obj_t *temperatureLabel;
+lv_obj_t *wifiLabel;
 lv_obj_t *table;
 lv_obj_t *chart;
 lv_obj_t *startButton;
@@ -111,6 +113,7 @@ void createTabs(lv_obj_t *parent)
     profileTab = lv_tabview_add_tab(parent, LV_SYMBOL_SETTINGS);
     chartTab = lv_tabview_add_tab(parent, LV_SYMBOL_IMAGE);
     miscTab = lv_tabview_add_tab(parent, LV_SYMBOL_EDIT);
+    wifiTab = lv_tabview_add_tab(parent, LV_SYMBOL_WIFI);
 
     lv_page_set_scroll_propagation(profileTab, false);
     lv_page_set_scrollbar_mode(profileTab, LV_SCROLLBAR_MODE_OFF);
@@ -123,6 +126,9 @@ void createTabs(lv_obj_t *parent)
 
     lv_page_set_scroll_propagation(miscTab, false);
     lv_page_set_scrollbar_mode(miscTab, LV_SCROLLBAR_MODE_OFF);
+
+    lv_page_set_scroll_propagation(wifiTab, false);
+    lv_page_set_scrollbar_mode(wifiTab, LV_SCROLLBAR_MODE_OFF);
 }
 
 void createTable(lv_obj_t *parent)
@@ -260,9 +266,15 @@ void createLoadButton(lv_obj_t *parent)
 
 void createLoadButtonLabel(lv_obj_t *parent)
 {
-
     loadButtonLabel = lv_label_create(parent, NULL);
     lv_label_set_text(loadButtonLabel, "LOAD");
+}
+
+void createwifiLabel(lv_obj_t *parent)
+{
+    wifiLabel = lv_label_create(parent, NULL);
+    lv_label_set_text(wifiLabel, "WIFI:");
+    lv_obj_align(wifiLabel, NULL, LV_ALIGN_CENTER, 0, 0);
 }
 
 void createClockLabel(lv_obj_t *parent)
@@ -363,6 +375,7 @@ void guiInit()
     createChart(chartTab);
     createStartButtonLabel(startButton);
     createLoadButtonLabel(loadButton);
+    createwifiLabel(wifiTab);
     createClockLabel(scr);
     createbuttonMatrix(miscTab);
 }
