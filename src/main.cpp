@@ -3,7 +3,6 @@
 #include <Wire.h>
 #include <RTClib.h>
 #include <PID_v1.h>
-#include <WiFi.h>
 #include <SPIFFS.h>
 #include <WiFi.h>
 #include <AsyncTCP.h>
@@ -25,8 +24,8 @@ boolean preTemperatureSet = false;
 
 AsyncWebServer server(80);
 
-const char *ssid = "blackmesaresearch_ap";
-const char *password = "zickigamorphkahlrevier";
+const char *ssid = "YARC_SERVER";
+const char *password = "123456789";
 
 const char *PARAM_MESSAGE = "message";
 
@@ -35,24 +34,35 @@ void notFound(AsyncWebServerRequest *request)
     request->send(404, "text/plain", "Not found");
 }
 
+String processor(const String &var)
+{
+    Serial.println(var);
+    if (var == "STATE")
+    {
+
+        return "STATE";
+    }
+    else if (var == "TEMPERATURE")
+    {
+        return "20";
+    }
+    else if (var == "HUMIDITY")
+    {
+        return "20";
+    }
+    else if (var == "PRESSURE")
+    {
+        return "20";
+    }
+}
+
 void mainSystemSetup()
 {
-
     tftInit();
-    lv_init();
-    lvThemeInit();
+    initGui();
     espPinInit();
     buzzStartup();
-
-    initDisplay();
-
-    initDriver();
-    screenInit();
-    guiInit();
-    setCallbacks();
-
     rtcConnect();
-
     pidSetup();
 
     dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / dataPoints);
@@ -68,8 +78,7 @@ void mainSystem()
     {
 
         currentTemperature = thermocouple.readCelsius();
-        updateTemperatureLabel(thermocouple.readCelsius());
-        lv_linemeter_set_value(temperatureMeter, currentTemperature);
+        setTemperatureLabel(thermocouple.readCelsius(), currentTemperature);
         previousFastIntervalEndTime = currentTime;
     }
 
@@ -81,15 +90,13 @@ void mainSystem()
         {
             currentPhase = COOLDOWN;
             Serial.println("THERMOCOUPLE NOT CONNECTED OR DAMAGED!");
-            lv_label_set_text(startButtonlabel, LV_SYMBOL_WARNING);
-            lv_label_set_text(indicatorLabel, LV_SYMBOL_WARNING);
+            setStartButtonLabel(LV_SYMBOL_WARNING);
+            setIndicatorLabel(LV_SYMBOL_WARNING);
         }
 
         if (processTimeCounter == dataPointIterator * dataPointDuration)
         {
-            lv_chart_set_next(chart, chartSeriesOne, currentTemperature);
-            lv_chart_set_next(chart, chartSeriesTwo, currentTargetTemperature);
-            lv_chart_refresh(chart);
+            setNextChartPoints(currentTemperature, currentTargetTemperature);
             dataPointIterator++;
         }
 
@@ -106,12 +113,10 @@ void mainSystem()
         {
 
         case IDLE:
-
-            lv_label_set_text(indicatorLabel, LV_SYMBOL_MINUS);
+            setIndicatorLabel(LV_SYMBOL_MINUS);
             currentTargetTemperature = currentProfile.IdleTemperature;
-            lv_label_set_text(statusLabel, "Status: IDLE");
+            setStatusLabel("Status: IDLE");
             processTimeCounter = 0;
-            lv_label_set_text(indicatorLabel, LV_SYMBOL_MINUS);
             if (idleMessageSent == false)
             {
                 Serial.println("STATUS: IDLE");
@@ -124,7 +129,7 @@ void mainSystem()
 
             processTimeCounter++;
             myPID.SetTunings(PID_KP_PREHEAT, PID_KI_PREHEAT, PID_KD_PREHEAT);
-            lv_label_set_text(statusLabel, "Status: PREHEAT");
+            setStatusLabel("Status: PREHEAT");
 
             if (!preTemperatureSet)
             {
@@ -155,7 +160,7 @@ void mainSystem()
 
             processTimeCounter++;
             myPID.SetTunings(PID_KP_SOAK, PID_KI_SOAK, PID_KD_SOAK);
-            lv_label_set_text(statusLabel, "Status: SOAK");
+            setStatusLabel("Status: SOAK");
             if (currentProfile.soakCounter < currentProfile.soakTime)
             {
                 currentTargetTemperature = currentProfile.soakTemperature;
@@ -181,7 +186,7 @@ void mainSystem()
 
             processTimeCounter++;
             myPID.SetTunings(PID_KP_REFLOW, PID_KI_REFLOW, PID_KD_REFLOW);
-            lv_label_set_text(statusLabel, "Status: REFLOW");
+            setStatusLabel("Status: REFLOW");
             if (currentProfile.reflowCounter < currentProfile.reflowTime)
             {
                 if (currentTargetTemperature < (currentProfile.reflowTemperature - 2))
@@ -242,18 +247,19 @@ void mainSystem()
         }
         if (Output > millis() - windowStartTime)
         {
-            lv_label_set_text(indicatorLabel, LV_SYMBOL_UP);
+            setIndicatorLabel(LV_SYMBOL_UP);
             digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, HIGH);
         }
         else
         {
+            setIndicatorLabel(LV_SYMBOL_DOWN);
             digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
-            lv_label_set_text(indicatorLabel, LV_SYMBOL_DOWN);
         }
     }
-
     else
+    {
         digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
+    }
 }
 
 void systemTask(void *parameter)
@@ -272,54 +278,35 @@ void webInterfaceTask(void *parameter)
 
     Serial.println("webInterfaceTask");
 
-    Serial.begin(115200);
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    if (WiFi.waitForConnectResult() != WL_CONNECTED)
+    if (!SPIFFS.begin())
     {
-        Serial.printf("WiFi Failed!\n");
+        Serial.println("An Error has occurred while mounting SPIFFS");
         return;
     }
 
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
-    lv_label_set_text(wifiLabel, WiFi.localIP().toString().c_str());
+    WiFi.mode(WIFI_AP); //Access Point mode
+    WiFi.softAP(ssid, password);
 
+    // Print ESP32 Local IP Address
+    Serial.println(WiFi.softAPIP());
+    setWifiLabels(ssid, password, WiFi.softAPIP().toString().c_str());
+
+    // Route for root / web page
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-              { request->send(200, "text/plain", "Hello, world"); });
+              { request->send(SPIFFS, "/index.html", String(), false, processor); });
 
-    // Send a GET request to <IP>/get?message=<message>
-    server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request)
-              {
-                  String message;
-                  if (request->hasParam(PARAM_MESSAGE))
-                  {
-                      message = request->getParam(PARAM_MESSAGE)->value();
-                  }
-                  else
-                  {
-                      message = "No message sent";
-                  }
-                  request->send(200, "text/plain", "Hello, GET: " + message);
-              });
+    // Route to load style.css file
+    server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/style.css", "text/css"); });
 
-    // Send a POST request to <IP>/post with a form field message set to <message>
-    server.on("/post", HTTP_POST, [](AsyncWebServerRequest *request)
-              {
-                  String message;
-                  if (request->hasParam(PARAM_MESSAGE, true))
-                  {
-                      message = request->getParam(PARAM_MESSAGE, true)->value();
-                  }
-                  else
-                  {
-                      message = "No message sent";
-                  }
-                  request->send(200, "text/plain", "Hello, POST: " + message);
-              });
+    // Route to set GPIO to HIGH
+    server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/index.html", String(), false, processor); });
 
-    server.onNotFound(notFound);
+    server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send_P(200, "text/plain", "test"); });
 
+    // Start server
     server.begin();
 
     vTaskDelete(NULL);

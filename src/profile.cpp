@@ -59,7 +59,7 @@ void resetStates()
     currentProfile.reflowCounter = 0;
     dataPointIterator = 0;
 
-    lv_label_set_text(statusLabel, "Status: COOLDOWN");
-    lv_label_set_text(startButtonlabel, "START");
-    lv_btn_set_state(startButton, LV_BTN_STATE_CHECKED_RELEASED);
+    setStatusLabel("Status: COOLDOWN");
+    setStartButtonLabel("START");
+    setStartButtonState(LV_BTN_STATE_CHECKED_RELEASED);
 }
