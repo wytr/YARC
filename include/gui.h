@@ -16,6 +16,7 @@ void setNextChartPoints(float current, float target);
 void setStartButtonState(int state);
 void setTemperatureLabel(float value, float currentTemperature);
 void setWifiLabels(const char *ssid, const char *pw, const char *ip);
+void addProfileDropdownOption(const char *name);
 void updateClock();
 
 #endif

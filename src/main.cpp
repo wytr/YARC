@@ -7,6 +7,8 @@
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
+#include "AsyncJson.h"
+#include "ArduinoJson.h"
 
 #include "periphery.h"
 #include "buzz.h"
@@ -126,7 +128,6 @@ void mainSystem()
             break;
 
         case PREHEAT:
-
             processTimeCounter++;
             myPID.SetTunings(PID_KP_PREHEAT, PID_KI_PREHEAT, PID_KD_PREHEAT);
             setStatusLabel("Status: PREHEAT");
@@ -157,7 +158,6 @@ void mainSystem()
             break;
 
         case SOAK:
-
             processTimeCounter++;
             myPID.SetTunings(PID_KP_SOAK, PID_KI_SOAK, PID_KD_SOAK);
             setStatusLabel("Status: SOAK");
@@ -183,7 +183,6 @@ void mainSystem()
             break;
 
         case REFLOW:
-
             processTimeCounter++;
             myPID.SetTunings(PID_KP_REFLOW, PID_KI_REFLOW, PID_KD_REFLOW);
             setStatusLabel("Status: REFLOW");
@@ -291,22 +290,42 @@ void webInterfaceTask(void *parameter)
     Serial.println(WiFi.softAPIP());
     setWifiLabels(ssid, password, WiFi.softAPIP().toString().c_str());
 
-    // Route for root / web page
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/index.html", String(), false, processor); });
 
-    // Route to load style.css file
     server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/style.css", "text/css"); });
 
-    // Route to set GPIO to HIGH
-    server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request)
-              { request->send(SPIFFS, "/index.html", String(), false, processor); });
+    server.on("/main.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/main.js", "text/javascript"); });
 
-    server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request)
-              { request->send_P(200, "text/plain", "test"); });
+    server.on("/profiles.json", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/profiles.json", "application/json"); });
 
-    // Start server
+    server.on("/create-profile", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/create-profile.html", String(), false, processor); });
+
+    AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler("/create-profile", [](AsyncWebServerRequest *request, JsonVariant &json)
+                                                                           {
+                                                                               StaticJsonDocument<300> data;
+                                                                               if (json.is<JsonArray>())
+                                                                               {
+                                                                                   data = json.as<JsonArray>();
+                                                                               }
+                                                                               else if (json.is<JsonObject>())
+                                                                               {
+                                                                                   data = json.as<JsonObject>();
+                                                                               }
+                                                                               String response;
+                                                                               const char *option = data["name"];
+                                                                               addProfileDropdownOption(option);
+                                                                               updateProfilesJson(data);
+                                                                               serializeJson(data, response);
+                                                                               request->send(200, "application/json", response);
+                                                                               Serial.println(response);
+                                                                           });
+    server.addHandler(handler);
+
     server.begin();
 
     vTaskDelete(NULL);

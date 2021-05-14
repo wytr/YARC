@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <ArduinoJSON.h>
+#include "SPIFFS.h"
 #include "periphery.h"
 #include "gui.h"
 #include "Tone32.h"
@@ -90,6 +92,11 @@ void setTemperatureLabel(float value, float currentTemperature)
 void setStartButtonState(int state)
 {
     lv_btn_set_state(startButton, state);
+}
+
+void addProfileDropdownOption(const char *name)
+{
+    lv_dropdown_add_option(dropdownList, name, LV_DROPDOWN_POS_LAST);
 }
 
 void createTemperatureMeter(lv_obj_t *parent)
@@ -346,8 +353,7 @@ void createDropdown(lv_obj_t *parent)
     dropdownList = lv_dropdown_create(parent, NULL);
     lv_dropdown_set_options(dropdownList, "leaded\n"
                                           "leadFree\n"
-                                          "temper\n"
-                                          "custom\n");
+                                          "temper");
 
     lv_obj_align(dropdownList, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
 }
@@ -489,16 +495,19 @@ void loaderEvent(lv_obj_t *obj, lv_event_t event)
             {
                 setProfile(leaded);
             }
-            if (profileDropdownOption == 1)
+            else if (profileDropdownOption == 1)
             {
                 setProfile(leadFree);
             }
-            if (profileDropdownOption == 2)
+            else if (profileDropdownOption == 2)
             {
                 setProfile(temper);
             }
-            if (profileDropdownOption == 3)
+            else
             {
+                char buf[20];
+                lv_dropdown_get_selected_str(dropdownList, buf, 20);
+                getProfileFromJson(buf);
                 setProfile(custom);
             }
             buzzMultipleTimes(profileDropdownOption + 1);

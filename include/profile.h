@@ -1,5 +1,6 @@
 #ifndef YARC_PROFILE_H
 #define YARC_PROFILE_H
+#include <ArduinoJSON.h>
 
 extern int profileDropdownOption;
 
@@ -32,5 +33,7 @@ extern profile currentProfile;
 void setProfile(float *profileArray);
 float calculateTargetTemperature();
 void resetStates();
+JsonObject getProfileFromJson(char *name);
+void updateProfilesJson(StaticJsonDocument<256> newProfileJson);
 
 #endif

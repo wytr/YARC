@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YARC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <h1>Yet Another Reflow Controller</h1>
+  <p><strong>Create profile</strong></p>
+  <form id="createProfileForm">
+    <div>
+        <label for="name">Name: </label><input id="name" type="text"/>
+    </div>
+    <div>
+        <label for="name">soakRampDeltaTemperature: </label><input id="soakRampDeltaTemperature" type="number" min="1" max="3" required/>
+    </div>
+    <div>
+        <label for="name">soakTemperature: </label><input id="soakTemperature" type="number" min="120" max="180" required/>
+    </div>
+    <div>
+        <label for="name">soakDuration: </label><input id="soakDuration" type="number" min="60" max="120" required/>
+    </div>
+    <div>
+        <label for="name">peakRampDeltaTemperature: </label><input id="peakRampDeltaTemperature" type="number" min="1" max="3" required/>
+    </div>
+    <div>
+        <label for="name">reflowDuration: </label><input id="reflowDuration" type="number" min="45" max="75" required/>
+    </div>
+    <input type="button" class="button" value="Submit" onclick="createProfile()"/>
+  </form>
+  <script src="main.js"></script>
+</body>
+</html>
