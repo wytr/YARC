@@ -7,6 +7,8 @@
 #include "buzz.h"
 #include "phase.h"
 #include "profile.h"
+#include "lv_qrcode.h"
+#include "yarcweb.h"
 
 lv_disp_buf_t displayBuffer;
 lv_color_t buf[LV_HOR_RES_MAX * 10];
@@ -38,6 +40,7 @@ lv_chart_series_t *chartSeriesActual;
 lv_chart_series_t *chartSeriesTarget;
 lv_style_t st;
 lv_obj_t *dropdownList;
+lv_obj_t *qr;
 
 const int dataPoints = 40;
 int targetChart[dataPoints];
@@ -152,6 +155,16 @@ void createTabs(lv_obj_t *parent)
 
     lv_page_set_scroll_propagation(wifiTab, false);
     lv_page_set_scrollbar_mode(wifiTab, LV_SCROLLBAR_MODE_OFF);
+}
+
+void createQrCode(lv_obj_t *parent)
+{
+    char buf[50] = "TEST";
+    sprintf(buf, "WIFI:T:WPA;S:%s;P:%s;;", ssid, password);
+    Serial.println(buf);
+    qr = lv_qrcode_create(parent, 140, lv_color_hex3(0x000), lv_color_hex3(0xeef));
+    lv_qrcode_update(qr, buf, strlen(buf));
+    lv_obj_align(qr, NULL, LV_ALIGN_IN_TOP_MID, 0, 40);
 }
 
 void createTable(lv_obj_t *parent)
@@ -297,28 +310,28 @@ void createWifiTitleLabel(lv_obj_t *parent)
 {
     wifiTitleLabel = lv_label_create(parent, NULL);
     lv_label_set_text(wifiTitleLabel, "WIFI");
-    lv_obj_align(wifiTitleLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 40);
+    lv_obj_align(wifiTitleLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
 }
 
 void createWifiSsidLabel(lv_obj_t *parent)
 {
     wifiSsidLabel = lv_label_create(parent, NULL);
     lv_label_set_text(wifiSsidLabel, "SSID:");
-    lv_obj_align(wifiSsidLabel, NULL, LV_ALIGN_IN_LEFT_MID, 10, 0);
+    lv_obj_align(wifiSsidLabel, NULL, LV_ALIGN_IN_LEFT_MID, 10, 60);
 }
 
 void createWifiPasswordLabel(lv_obj_t *parent)
 {
     wifiPasswordLabel = lv_label_create(parent, NULL);
     lv_label_set_text(wifiPasswordLabel, "PW:");
-    lv_obj_align(wifiPasswordLabel, NULL, LV_ALIGN_IN_LEFT_MID, 10, 30);
+    lv_obj_align(wifiPasswordLabel, NULL, LV_ALIGN_IN_LEFT_MID, 10, 80);
 }
 
 void createWebInterfaceIpLabel(lv_obj_t *parent)
 {
     webInterfaceIpLabel = lv_label_create(parent, NULL);
     lv_label_set_text(webInterfaceIpLabel, "IP:");
-    lv_obj_align(webInterfaceIpLabel, NULL, LV_ALIGN_IN_LEFT_MID, 10, 60);
+    lv_obj_align(webInterfaceIpLabel, NULL, LV_ALIGN_IN_LEFT_MID, 10, 100);
 }
 
 void setWifiLabels(const char *ssid, const char *pw, const char *ip)
@@ -424,6 +437,7 @@ void createGuiObjects()
     createWebInterfaceIpLabel(wifiTab);
     createClockLabel(scr);
     createbuttonMatrix(miscTab);
+    createQrCode(wifiTab);
 }
 
 void buttonMatrixEvent(lv_obj_t *obj, lv_event_t event)

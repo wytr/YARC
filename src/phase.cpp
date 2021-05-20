@@ -4,7 +4,7 @@ unsigned long currentTime = 0;
 unsigned long previousIntervalEndTime = 0;
 unsigned long previousFastIntervalEndTime = 0;
 unsigned long oneSecondInterval = 1000;
-unsigned long temperatureUpdateInterval = 220;
+unsigned long temperatureUpdateInterval = 250;
 
 int processTimeCounter = 0;
 //To-Do: implement this to keep track of maximum temperature per process

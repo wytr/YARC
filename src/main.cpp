@@ -3,12 +3,6 @@
 #include <Wire.h>
 #include <RTClib.h>
 #include <PID_v1.h>
-#include <SPIFFS.h>
-#include <WiFi.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include "AsyncJson.h"
-#include "ArduinoJson.h"
 
 #include "periphery.h"
 #include "buzz.h"
@@ -16,6 +10,7 @@
 #include "phase.h"
 #include "profile.h"
 #include "pid_setup.h"
+#include "yarcweb.h"
 
 TaskHandle_t webInterfaceTaskHandler;
 
@@ -23,40 +18,6 @@ float currentTemperature;
 float currentTargetTemperature;
 boolean thermocoupleError = false;
 boolean preTemperatureSet = false;
-
-AsyncWebServer server(80);
-
-const char *ssid = "YARC_SERVER";
-const char *password = "123456789";
-
-const char *PARAM_MESSAGE = "message";
-
-void notFound(AsyncWebServerRequest *request)
-{
-    request->send(404, "text/plain", "Not found");
-}
-
-String processor(const String &var)
-{
-    Serial.println(var);
-    if (var == "STATE")
-    {
-
-        return "STATE";
-    }
-    else if (var == "TEMPERATURE")
-    {
-        return "20";
-    }
-    else if (var == "HUMIDITY")
-    {
-        return "20";
-    }
-    else if (var == "PRESSURE")
-    {
-        return "20";
-    }
-}
 
 void mainSystemSetup()
 {
@@ -75,7 +36,7 @@ void mainSystem()
 
     currentTime = millis();
 
-    //Every 220 milliseconds (-> Datasheet MAX6675 -> max conversion time)
+    //Every 250 milliseconds (-> Datasheet MAX6675 -> max conversion time)
     if (currentTime - previousFastIntervalEndTime >= temperatureUpdateInterval)
     {
 
@@ -274,7 +235,6 @@ void systemTask(void *parameter)
 
 void webInterfaceTask(void *parameter)
 {
-
     Serial.println("webInterfaceTask");
 
     if (!SPIFFS.begin())
@@ -340,7 +300,7 @@ void webInterface()
 void setup()
 {
     Serial.begin(115200);
-    xTaskCreate(systemTask, "systemTask", 4096 * 2, NULL, 1, NULL);
+    xTaskCreate(systemTask, "systemTask", 4096 * 8, NULL, 1, NULL);
     webInterface();
 }
 
