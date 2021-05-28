@@ -71,11 +71,9 @@ JsonObject getProfileFromJson(char *name)
     JsonObject profile;
     if (file && file.size())
     {
-
-        DynamicJsonDocument profilesJson(1300);
+        DynamicJsonDocument profilesJson(file.size());
         JsonArray array = profilesJson.to<JsonArray>();
         DeserializationError err = deserializeJson(profilesJson, file);
-        Serial.println(err.c_str());
         if (err)
         {
             Serial.print(F("deserializeJson() failed with code "));
@@ -83,26 +81,18 @@ JsonObject getProfileFromJson(char *name)
         }
         else
         {
-            Serial.println(String("search: ") + name);
-            Serial.println(String("size: ") + array.size());
-            for (auto value : array)
+            for (JsonArray value : array)
             {
-                Serial.println("element");
-                for (auto inner : value.to<JsonArray>())
+                for (JsonObject inner : value)
                 {
-                    Serial.println("inner ");
-                    //Serial.println(value);
-                    if (value["name"] == name)
+                    if (inner["name"] == name)
                     {
-                        Serial.print(String("found") + name);
+                        Serial.print(String("found: ") + name);
+                        profile = inner;
+                        break;
                     }
                 }
             }
-            // array.remove(0);
-
-            String json;
-            serializeJson(array, json);
-            Serial.println(String("full: ") + json);
         }
 
         file.close();
@@ -112,9 +102,9 @@ JsonObject getProfileFromJson(char *name)
 
 void updateProfilesJson(StaticJsonDocument<256> newProfileJson)
 {
-    DynamicJsonDocument doc(1024);
     JsonObject obj;
     File file = SPIFFS.open("/profiles.json", FILE_READ);
+    DynamicJsonDocument doc(file.size());
     if (!file)
     {
         Serial.println(F("Failed to create file, probably not exists"));

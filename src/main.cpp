@@ -294,7 +294,7 @@ void webInterfaceTask(void *parameter)
 void webInterface()
 {
     vTaskDelay(500);
-    xTaskCreate(webInterfaceTask, "webInterfaceTask", 4096 * 2, NULL, 1, &webInterfaceTaskHandler);
+    xTaskCreate(webInterfaceTask, "webInterfaceTask", 4096 * 4, NULL, 1, &webInterfaceTaskHandler);
 }
 
 void setup()
