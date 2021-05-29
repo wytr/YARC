@@ -364,9 +364,8 @@ void createbuttonMatrix(lv_obj_t *parent)
 void createDropdown(lv_obj_t *parent)
 {
     dropdownList = lv_dropdown_create(parent, NULL);
-    lv_dropdown_set_options(dropdownList, "leaded\n"
-                                          "leadFree\n"
-                                          "temper");
+    char const *profileNames = getProfileNames();
+    lv_dropdown_set_options(dropdownList, profileNames);
 
     lv_obj_align(dropdownList, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
 }
@@ -504,29 +503,15 @@ void loaderEvent(lv_obj_t *obj, lv_event_t event)
     {
         if (currentPhase == IDLE)
         {
+            char buf[20];
+            lv_dropdown_get_selected_str(dropdownList, buf, 20);
+            JsonObject profile = getProfileFromJson(buf);
+            Serial.println(profile["name"].as<String>());
+            setProfile(profile);
 
-            if (profileDropdownOption == 0)
-            {
-                setProfile(leaded);
-            }
-            else if (profileDropdownOption == 1)
-            {
-                setProfile(leadFree);
-            }
-            else if (profileDropdownOption == 2)
-            {
-                setProfile(temper);
-            }
-            else
-            {
-                char buf[20];
-                lv_dropdown_get_selected_str(dropdownList, buf, 20);
-                getProfileFromJson(buf);
-                setProfile(custom);
-            }
             buzzMultipleTimes(profileDropdownOption + 1);
-            updateTableContent(currentProfile.preheatTime, currentProfile.preheatTemperature, currentProfile.soakTime, currentProfile.soakTemperature, currentProfile.reflowTime, currentProfile.reflowTemperature);
-            dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / dataPoints);
+            updateTableContent(currentProfile.soakRampDuration, currentProfile.ambientTemperature, currentProfile.soakDuration, currentProfile.soakTemperature, currentProfile.reflowDuration, currentProfile.reflowTemperature);
+            dataPointDuration = ((currentProfile.soakRampDuration + currentProfile.soakDuration + currentProfile.reflowDuration) / dataPoints);
             //Serial.println(dataPointDuration);
         }
         else

@@ -13,22 +13,23 @@
 #include "yarcweb.h"
 
 TaskHandle_t webInterfaceTaskHandler;
+TaskHandle_t guiTaskHandler;
 
 float currentTemperature;
 float currentTargetTemperature;
 boolean thermocoupleError = false;
-boolean preTemperatureSet = false;
+boolean ambientTemperatureSet = false;
 
 void mainSystemSetup()
 {
     tftInit();
-    initGui();
+
     espPinInit();
     buzzStartup();
     rtcConnect();
     pidSetup();
 
-    dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / dataPoints);
+    dataPointDuration = ((currentProfile.soakRampDuration + currentProfile.soakDuration + currentProfile.reflowDuration) / dataPoints);
 }
 
 void mainSystem()
@@ -77,7 +78,7 @@ void mainSystem()
 
         case IDLE:
             setIndicatorLabel(LV_SYMBOL_MINUS);
-            currentTargetTemperature = currentProfile.IdleTemperature;
+            currentTargetTemperature = 0;
             setStatusLabel("Status: IDLE");
             processTimeCounter = 0;
             if (idleMessageSent == false)
@@ -93,13 +94,14 @@ void mainSystem()
             myPID.SetTunings(PID_KP_PREHEAT, PID_KI_PREHEAT, PID_KD_PREHEAT);
             setStatusLabel("Status: PREHEAT");
 
-            if (!preTemperatureSet)
+            if (!ambientTemperatureSet)
             {
-                currentProfile.preheatTemperature = currentTemperature;
-                preTemperatureSet = true;
+                currentProfile.ambientTemperature = currentTemperature;
+                currentProfile.soakRampDuration = (currentProfile.soakTemperature - currentTemperature) / currentProfile.soakRampRate;
+                ambientTemperatureSet = true;
             }
 
-            if (currentProfile.preheatCounter < currentProfile.preheatTime)
+            if (currentProfile.preheatCounter < currentProfile.soakRampDuration)
             {
                 currentTargetTemperature = calculateTargetTemperature();
                 if (!preheatMessageSent)
@@ -122,7 +124,7 @@ void mainSystem()
             processTimeCounter++;
             myPID.SetTunings(PID_KP_SOAK, PID_KI_SOAK, PID_KD_SOAK);
             setStatusLabel("Status: SOAK");
-            if (currentProfile.soakCounter < currentProfile.soakTime)
+            if (currentProfile.soakCounter < currentProfile.soakDuration)
             {
                 currentTargetTemperature = currentProfile.soakTemperature;
 
@@ -147,7 +149,7 @@ void mainSystem()
             processTimeCounter++;
             myPID.SetTunings(PID_KP_REFLOW, PID_KI_REFLOW, PID_KD_REFLOW);
             setStatusLabel("Status: REFLOW");
-            if (currentProfile.reflowCounter < currentProfile.reflowTime)
+            if (currentProfile.reflowCounter < currentProfile.reflowDuration)
             {
                 if (currentTargetTemperature < (currentProfile.reflowTemperature - 2))
                 {
@@ -178,12 +180,12 @@ void mainSystem()
             resetStates();
             if (!cooldownMessageSent)
             {
-                currentTargetTemperature = currentProfile.IdleTemperature;
+                currentTargetTemperature = 0;
                 Serial.println("STATUS: COOLDOWN");
                 cooldownMessageSent = true;
             }
             currentProfile.cooldownCounter++;
-            if (currentProfile.cooldownCounter >= currentProfile.cooldownTime || currentTemperature < 50.0)
+            if (currentProfile.cooldownCounter >= currentProfile.cooldownDuration || currentTemperature < 50.0)
             {
                 currentProfile.cooldownCounter = 0;
                 resetMessages();
@@ -242,7 +244,7 @@ void webInterfaceTask(void *parameter)
         Serial.println("An Error has occurred while mounting SPIFFS");
         return;
     }
-
+    initGui();
     WiFi.mode(WIFI_AP); //Access Point mode
     WiFi.softAP(ssid, password);
 
@@ -291,17 +293,18 @@ void webInterfaceTask(void *parameter)
     vTaskDelete(NULL);
 }
 
-void webInterface()
+void guiTask(void *parameter)
 {
-    vTaskDelay(500);
-    xTaskCreate(webInterfaceTask, "webInterfaceTask", 4096 * 4, NULL, 1, &webInterfaceTaskHandler);
+    Serial.println("hello");
 }
 
 void setup()
 {
     Serial.begin(115200);
-    xTaskCreate(systemTask, "systemTask", 4096 * 8, NULL, 1, NULL);
-    webInterface();
+
+    xTaskCreate(systemTask, "systemTask", 4096 * 10, NULL, 1, NULL);
+    vTaskDelay(500);
+    xTaskCreate(webInterfaceTask, "webInterfaceTask", 4096 * 10, NULL, 1, &webInterfaceTaskHandler);
 }
 
 void loop() {}

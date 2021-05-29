@@ -37,10 +37,10 @@ function createProfile(){
 	createProfileForm.checkValidity();
 	var json = {
 		name: document.getElementById("name").value,
-		soakRampDeltaTemperature: document.getElementById("soakRampDeltaTemperature").value,
+		soakRampRate: document.getElementById("soakRampRate").value,
 		soakTemperature: document.getElementById("soakTemperature").value,
 		soakDuration: document.getElementById("soakDuration").value,
-		peakRampDeltaTemperature: document.getElementById("peakRampDeltaTemperature").value,
+		peakRampRate: document.getElementById("peakRampRate").value,
 		reflowDuration: document.getElementById("reflowDuration").value
 	}
 	postRequest('create-profile', json);	

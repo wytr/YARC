@@ -4,36 +4,34 @@
 
 extern int profileDropdownOption;
 
-extern float leaded[6];
-extern float leadFree[6];
-extern float temper[6];
-extern float custom[6];
 extern int dataPointIterator;
 
 struct profile
 {
-    float preheatTime;
-    float soakTime;
-    float reflowTime;
-    float cooldownTime;
+    float soakRampRate;
+    float soakRampDuration;
+    float soakDuration;
+    float peakRampRate;
+    float reflowDuration;
+    float cooldownDuration;
 
     float preheatCounter;
     float soakCounter;
     float reflowCounter;
     float cooldownCounter;
 
-    float IdleTemperature;
-    float preheatTemperature;
+    float ambientTemperature;
     float soakTemperature;
     float reflowTemperature;
 };
 
 extern profile currentProfile;
 
-void setProfile(float *profileArray);
+void setProfile(JsonObject profileJsonObject);
 float calculateTargetTemperature();
 void resetStates();
 JsonObject getProfileFromJson(char *name);
+char const *getProfileNames();
 void updateProfilesJson(StaticJsonDocument<256> newProfileJson);
 
 #endif

@@ -7,42 +7,23 @@
 #include "buzz.h"
 #include "periphery.h"
 
-float leaded[6] = {60, 80, 60, 30, 150, 230};
-float leadFree[6] = {60, 80, 60, 30, 150, 250};
-float temper[6] = {120, 1000, 1000, 60, 60, 60};
-float custom[6] = {60, 80, 60, 30, 150, 230};
 int dataPointIterator = 0;
 
-profile currentProfile =
-    {
-        .preheatTime = 60,
-        .soakTime = 80,
-        .reflowTime = 60,
-        .cooldownTime = 10,
+profile currentProfile = {};
 
-        .preheatCounter = 0,
-        .soakCounter = 0,
-        .reflowCounter = 0,
-        .cooldownCounter = 0,
-
-        .IdleTemperature = 0,
-        .preheatTemperature = 30,
-        .soakTemperature = 150,
-        .reflowTemperature = 230};
-
-void setProfile(float profileArray[])
+void setProfile(JsonObject profileJsonObject)
 {
-    currentProfile.preheatTime = profileArray[0];
-    currentProfile.soakTime = profileArray[1];
-    currentProfile.reflowTime = profileArray[2];
-    currentProfile.preheatTemperature = profileArray[3];
-    currentProfile.soakTemperature = profileArray[4];
-    currentProfile.reflowTemperature = profileArray[5];
+    currentProfile.soakRampRate = profileJsonObject["soakRampRate"].as<float>();
+    currentProfile.soakTemperature = profileJsonObject["soakTemperature"].as<float>();
+    currentProfile.soakDuration = profileJsonObject["soakDuration"].as<float>();
+    currentProfile.peakRampRate = profileJsonObject["peakRampRate"].as<float>();
+    currentProfile.reflowTemperature = profileJsonObject["reflowTemperature"].as<float>();
+    currentProfile.reflowDuration = profileJsonObject["reflowDuration"].as<float>();
 }
 
 float calculateTargetTemperature()
 {
-    float targetTemperature = currentProfile.preheatTemperature + ((currentProfile.soakTemperature - currentProfile.preheatTemperature) / currentProfile.preheatTime) * currentProfile.preheatCounter;
+    float targetTemperature = currentProfile.ambientTemperature + ((currentProfile.soakTemperature - currentProfile.ambientTemperature) / currentProfile.soakRampDuration) * currentProfile.preheatCounter;
 
     return targetTemperature;
 }
@@ -68,10 +49,10 @@ void resetStates()
 JsonObject getProfileFromJson(char *name)
 {
     File file = SPIFFS.open("/profiles.json", FILE_READ);
-    JsonObject profile;
+    JsonObject targetProfile;
     if (file && file.size())
     {
-        DynamicJsonDocument profilesJson(file.size());
+        DynamicJsonDocument profilesJson(file.size() + 1024);
         JsonArray array = profilesJson.to<JsonArray>();
         DeserializationError err = deserializeJson(profilesJson, file);
         if (err)
@@ -81,14 +62,14 @@ JsonObject getProfileFromJson(char *name)
         }
         else
         {
-            for (JsonArray value : array)
+            for (JsonArray profiles : array)
             {
-                for (JsonObject inner : value)
+                for (JsonObject profile : profiles)
                 {
-                    if (inner["name"] == name)
+                    if (profile["name"] == name)
                     {
                         Serial.print(String("found: ") + name);
-                        profile = inner;
+                        targetProfile = profile;
                         break;
                     }
                 }
@@ -97,7 +78,43 @@ JsonObject getProfileFromJson(char *name)
 
         file.close();
     }
-    return profile;
+    return targetProfile;
+}
+
+char const *getProfileNames()
+{
+    File file = SPIFFS.open("/profiles.json", FILE_READ);
+    String names;
+    if (file && file.size())
+    {
+        Serial.println(file.size());
+        DynamicJsonDocument profilesJson(file.size() + 1024);
+        JsonArray array = profilesJson.to<JsonArray>();
+        DeserializationError err = deserializeJson(profilesJson, file);
+        if (err)
+        {
+            Serial.print(F("deserializeJson() failed with code "));
+            Serial.println(err.c_str());
+        }
+        else
+        {
+            for (JsonArray profiles : array)
+            {
+                int iterator = 0;
+                for (JsonObject profile : profiles)
+                {
+                    names += profile["name"].as<String>();
+                    if (iterator < profiles.size() - 1)
+                    {
+                        names += String("\n");
+                    }
+                    iterator++;
+                }
+            }
+        }
+        file.close();
+    }
+    return names.c_str();
 }
 
 void updateProfilesJson(StaticJsonDocument<256> newProfileJson)
@@ -143,10 +160,10 @@ void updateProfilesJson(StaticJsonDocument<256> newProfileJson)
     JsonObject objArrayProfiles = profiles.createNestedObject();
 
     objArrayProfiles["name"] = newProfileJson["name"];
-    objArrayProfiles["soakRampDeltaTemperature"] = newProfileJson["soakRampDeltaTemperature"];
+    objArrayProfiles["soakRampRate"] = newProfileJson["soakRampRate"];
     objArrayProfiles["soakTemperature"] = newProfileJson["soakTemperature"];
     objArrayProfiles["soakDuration"] = newProfileJson["soakDuration"];
-    objArrayProfiles["peakRampDeltaTemperature"] = newProfileJson["peakRampDeltaTemperature"];
+    objArrayProfiles["peakRampRate"] = newProfileJson["peakRampRate"];
     objArrayProfiles["reflowDuration"] = newProfileJson["reflowDuration"];
 
     file = SPIFFS.open("/profiles.json", FILE_WRITE);
