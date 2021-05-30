@@ -11,7 +11,7 @@ struct profile
     float soakRampRate;
     float soakRampDuration;
     float soakDuration;
-    float peakRampRate;
+    float reflowRampRate;
     float reflowDuration;
     float cooldownDuration;
 

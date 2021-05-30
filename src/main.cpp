@@ -255,11 +255,20 @@ void webInterfaceTask(void *parameter)
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/index.html", String(), false, processor); });
 
+    server.on("/materialize.min.css", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/materialize.min.css", "text/css"); });
+
+    server.on("/diagram.css", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/diagram.css", "text/css"); });
+
     server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/style.css", "text/css"); });
 
     server.on("/main.js", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/main.js", "text/javascript"); });
+
+    server.on("/diagram.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/diagram.js", "text/javascript"); });
 
     server.on("/profiles.json", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/profiles.json", "application/json"); });
@@ -286,6 +295,7 @@ void webInterfaceTask(void *parameter)
                                                                                request->send(200, "application/json", response);
                                                                                Serial.println(response);
                                                                            });
+
     server.addHandler(handler);
 
     server.begin();

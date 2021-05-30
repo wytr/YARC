@@ -1,28 +1,49 @@
-html {
-  font-family: Helvetica;
-  display: inline-block;
-  margin: 0px auto;
-  text-align: center;
+body {
+  background-color: #f6f6f6;
 }
-h1{
-  color: #0F3376;
-  padding: 2vh;
+
+.header {
+  padding: 20px;
+  margin: 20px;
+  border-bottom: 1px solid lightgray;
 }
-p{
-  font-size: 1.5rem;
+
+.header svg {
+  width: 20px;
+  height: 20px;
+  margin: 0 10px;
 }
-.button {
-  display: inline-block;
-  background-color: #008CBA;
-  border: none;
-  border-radius: 4px;
-  color: white;
-  padding: 16px 40px;
-  text-decoration: none;
-  font-size: 30px;
-  margin: 2px;
-  cursor: pointer;
+
+.header span {
+  font-size: 18.5px;
 }
-.button2 {
-  background-color: #f44336;
+
+.unit::after {
+  position: absolute;
+  top: 11.1px;
+  right: 20px;
+}
+
+.unit-cs::after {
+  content: "\00b0 C/s";
+}
+
+.unit-s::after {
+  content: "s";
+}
+
+.unit-c::after {
+  content: "\00b0 C";
+}
+
+.btn-floating {
+  font-size: 27px;
+}
+
+.remove-btn {
+  float: right;
+}
+
+.collection-item {
+  line-height: 2.5rem;
 }

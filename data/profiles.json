@@ -1,7 +1,7 @@
 {
     "profiles": [
-        {"name":"leaded","soakRampRate":"2","soakTemperature":"150","soakDuration":"80","peakRampRate":"2","reflowTemperature":"230","reflowDuration":"60"},
-        {"name":"leadFree","soakRampRate":"2","soakTemperature":"150","soakDuration":"80","peakRampRate":"2","reflowTemperature":"250","reflowDuration":"60"},
-        {"name":"temper","soakRampRate":"2","soakTemperature":"60","soakDuration":"1000","peakRampRate":"2","reflowTemperature":"60","reflowDuration":"1000"}
+        {"name":"leaded","soakRampRate":"2","soakTemperature":"150","soakDuration":"80","reflowRampRate":"2","reflowTemperature":"230","reflowDuration":"60"},
+        {"name":"leadFree","soakRampRate":"2","soakTemperature":"150","soakDuration":"80","reflowRampRate":"2","reflowTemperature":"250","reflowDuration":"60"},
+        {"name":"temper","soakRampRate":"2","soakTemperature":"60","soakDuration":"1000","reflowRampRate":"2","reflowTemperature":"60","reflowDuration":"1000"}
     ]
 }

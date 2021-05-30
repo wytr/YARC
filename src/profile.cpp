@@ -16,7 +16,7 @@ void setProfile(JsonObject profileJsonObject)
     currentProfile.soakRampRate = profileJsonObject["soakRampRate"].as<float>();
     currentProfile.soakTemperature = profileJsonObject["soakTemperature"].as<float>();
     currentProfile.soakDuration = profileJsonObject["soakDuration"].as<float>();
-    currentProfile.peakRampRate = profileJsonObject["peakRampRate"].as<float>();
+    currentProfile.reflowRampRate = profileJsonObject["reflowRampRate"].as<float>();
     currentProfile.reflowTemperature = profileJsonObject["reflowTemperature"].as<float>();
     currentProfile.reflowDuration = profileJsonObject["reflowDuration"].as<float>();
 }
@@ -121,7 +121,7 @@ void updateProfilesJson(StaticJsonDocument<256> newProfileJson)
 {
     JsonObject obj;
     File file = SPIFFS.open("/profiles.json", FILE_READ);
-    DynamicJsonDocument doc(file.size());
+    DynamicJsonDocument doc(file.size() + 1024);
     if (!file)
     {
         Serial.println(F("Failed to create file, probably not exists"));
@@ -148,8 +148,8 @@ void updateProfilesJson(StaticJsonDocument<256> newProfileJson)
     JsonArray profiles;
     if (!obj.containsKey(F("profiles")))
     {
-        Serial.println(F("Not find data array! Crete one!"));
-        profiles = obj.createNestedArray(F("data"));
+        Serial.println(F("Could not find data array!"));
+        profiles = obj.createNestedArray(F("profiles"));
     }
     else
     {
@@ -163,7 +163,8 @@ void updateProfilesJson(StaticJsonDocument<256> newProfileJson)
     objArrayProfiles["soakRampRate"] = newProfileJson["soakRampRate"];
     objArrayProfiles["soakTemperature"] = newProfileJson["soakTemperature"];
     objArrayProfiles["soakDuration"] = newProfileJson["soakDuration"];
-    objArrayProfiles["peakRampRate"] = newProfileJson["peakRampRate"];
+    objArrayProfiles["reflowRampRate"] = newProfileJson["reflowRampRate"];
+    objArrayProfiles["reflowTemperature"] = newProfileJson["reflowTemperature"];
     objArrayProfiles["reflowDuration"] = newProfileJson["reflowDuration"];
 
     file = SPIFFS.open("/profiles.json", FILE_WRITE);
