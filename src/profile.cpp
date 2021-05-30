@@ -18,6 +18,7 @@ void setProfile(JsonObject profileJsonObject)
     currentProfile.soakDuration = profileJsonObject["soakDuration"].as<float>();
     currentProfile.reflowRampRate = profileJsonObject["reflowRampRate"].as<float>();
     currentProfile.reflowTemperature = profileJsonObject["reflowTemperature"].as<float>();
+    currentProfile.reflowRampDuration = (currentProfile.reflowTemperature - currentProfile.soakTemperature) / currentProfile.reflowRampRate;
     currentProfile.reflowDuration = profileJsonObject["reflowDuration"].as<float>();
 }
 

@@ -57,9 +57,6 @@ void mainSystem()
             setStartButtonLabel(LV_SYMBOL_WARNING);
             setIndicatorLabel(LV_SYMBOL_WARNING);
         }
-        Serial.println(String("processIntervalCounter: ") + processIntervalCounter);
-        Serial.println(String("dataPointIterator: ") + dataPointIterator);
-        Serial.println(String("dataPointDuration: ") + dataPointDuration);
         if (processIntervalCounter != 0 && processIntervalCounter == dataPointIterator * dataPointDuration)
         {
             setNextChartPoints(currentTemperature, currentTargetTemperature);
@@ -101,9 +98,8 @@ void mainSystem()
                 Serial.println("ambientTemperatureSet");
                 currentProfile.ambientTemperature = currentTemperature;
                 currentProfile.soakRampDuration = (currentProfile.soakTemperature - currentProfile.ambientTemperature) / currentProfile.soakRampRate;
-                float reflowRampDuration = (currentProfile.reflowTemperature - currentProfile.soakTemperature) / currentProfile.reflowRampRate;
                 int diagramCooldownDurationBuffer = 5;
-                dataPointDuration = ((currentProfile.soakRampDuration + currentProfile.soakDuration + currentProfile.reflowDuration + reflowRampDuration + diagramCooldownDurationBuffer) / dataPoints);
+                dataPointDuration = ((currentProfile.soakRampDuration + currentProfile.soakDuration + currentProfile.reflowDuration + currentProfile.reflowRampDuration + diagramCooldownDurationBuffer) / dataPoints);
                 ambientTemperatureSet = true;
             }
 
@@ -146,18 +142,16 @@ void mainSystem()
             {
                 currentProfile.soakCounter = 0;
                 soakMessageSent = false;
-                currentPhase = REFLOW;
+                currentPhase = REFLOWRAMP;
             }
             Setpoint = currentTargetTemperature;
             break;
 
-        case REFLOW:
+        case REFLOWRAMP:
             processIntervalCounter++;
             myPID.SetTunings(PID_KP_REFLOW, PID_KI_REFLOW, PID_KD_REFLOW);
-            setStatusLabel("Status: REFLOW");
-            Serial.println(String("reflowCounter: ") + currentProfile.reflowCounter);
-            Serial.println(String("reflowDuration: ") + currentProfile.reflowDuration);
-            if (currentProfile.reflowCounter < currentProfile.reflowDuration)
+            setStatusLabel("Status: RAMPUP");
+            if (currentProfile.reflowRampCounter < currentProfile.reflowRampDuration)
             {
                 if (currentTargetTemperature < (currentProfile.reflowTemperature - 2))
                 {
@@ -168,6 +162,28 @@ void mainSystem()
                     currentTargetTemperature = currentProfile.reflowTemperature;
                 }
 
+                if (reflowRampMessageSent == false)
+                {
+                    Serial.println("STATUS: RAMPUP");
+                    reflowRampMessageSent = true;
+                }
+                currentProfile.reflowRampCounter++;
+            }
+            else
+            {
+                currentProfile.reflowRampCounter = 0;
+                reflowRampMessageSent = false;
+                currentPhase = REFLOW;
+            }
+            Setpoint = currentTargetTemperature;
+            break;
+
+        case REFLOW:
+            processIntervalCounter++;
+            myPID.SetTunings(PID_KP_REFLOW, PID_KI_REFLOW, PID_KD_REFLOW);
+            setStatusLabel("Status: REFLOW");
+            if (currentProfile.reflowCounter < currentProfile.reflowDuration)
+            {
                 if (reflowMessageSent == false)
                 {
                     Serial.println("STATUS: REFLOW");

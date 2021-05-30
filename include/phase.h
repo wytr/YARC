@@ -6,8 +6,9 @@ enum phase
     IDLE = 0,
     PREHEAT = 1,
     SOAK = 2,
-    REFLOW = 3,
-    COOLDOWN = 4
+    REFLOWRAMP = 3,
+    REFLOW = 4,
+    COOLDOWN = 5
 
 };
 extern phase currentPhase;
@@ -26,6 +27,7 @@ extern float maxProcessTemperature;
 extern bool idleMessageSent;
 extern bool preheatMessageSent;
 extern bool soakMessageSent;
+extern bool reflowRampMessageSent;
 extern bool reflowMessageSent;
 extern bool cooldownMessageSent;
 

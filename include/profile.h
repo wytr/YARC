@@ -12,10 +12,12 @@ struct profile
     float soakRampDuration;
     float soakDuration;
     float reflowRampRate;
+    float reflowRampDuration;
     float reflowDuration;
 
     float preheatCounter;
     float soakCounter;
+    float reflowRampCounter;
     float reflowCounter;
 
     float ambientTemperature;

@@ -13,6 +13,7 @@ float maxProcessTemperature = 0;
 bool idleMessageSent = false;
 bool preheatMessageSent = false;
 bool soakMessageSent = false;
+bool reflowRampMessageSent = false;
 bool reflowMessageSent = false;
 bool cooldownMessageSent = false;
 
@@ -21,6 +22,7 @@ void resetMessages()
     idleMessageSent = false;
     preheatMessageSent = false;
     soakMessageSent = false;
+    reflowRampMessageSent = false;
     reflowMessageSent = false;
     cooldownMessageSent = false;
 }

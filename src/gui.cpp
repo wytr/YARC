@@ -42,7 +42,7 @@ lv_style_t st;
 lv_obj_t *dropdownList;
 lv_obj_t *qr;
 
-const int dataPoints = 40;
+const int dataPoints = 28;
 int targetChart[dataPoints];
 int actualChart[dataPoints];
 int profileDropdownOption;
@@ -504,7 +504,6 @@ void loaderEvent(lv_obj_t *obj, lv_event_t event)
             char buf[20];
             lv_dropdown_get_selected_str(dropdownList, buf, 20);
             JsonObject profile = getProfileFromJson(buf);
-            Serial.println(profile["name"].as<String>());
             setProfile(profile);
 
             buzzMultipleTimes(profileDropdownOption + 1);
