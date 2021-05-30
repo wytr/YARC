@@ -11,14 +11,10 @@ function setSoakRampDimensions() {
     document.getElementById('soakRamp').setAttribute('style', widthCss + heightCss);
 }
 
-function setSoakHeight() {
+function setSoakDimensions() {
     var soakTemperature = document.getElementById('soakTemperature').value
-    document.getElementById('soak').setAttribute('style',  'height:' + soakTemperature + 'em');
-}
-
-function setSoakWidth() {
     var soakDuration = document.getElementById('soakDuration').value
-    document.getElementById('soak').setAttribute('style',  'width:' + soakDuration + 'em');
+    document.getElementById('soak').setAttribute('style',  `height:${soakTemperature}em;width:${soakDuration}em`);
 }
 
 function setReflowRampDimensions() {     
@@ -30,14 +26,10 @@ function setReflowRampDimensions() {
     document.getElementById('reflowRamp').setAttribute('style', widthCss + heightCss); 
 }
 
-function setReflowHeight() {
+function setReflowDimenions() {
     var reflowTemperature = document.getElementById('reflowTemperature').value
-    document.getElementById('reflow').setAttribute('style',  'height:' + reflowTemperature + 'em');
-}
-
-function setReflowWidth() {
     var reflowDuration = document.getElementById('reflowDuration').value
-    document.getElementById('reflow').setAttribute('style',  'width:' + reflowDuration + 'em');
+    document.getElementById('reflow').setAttribute('style', `height:${reflowTemperature}em;width:${reflowDuration}em`);
 }
 
 function setRowHeights() {
@@ -60,13 +52,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('soakTemperature').addEventListener('change', _ => {
         setRowHeights();
         setSoakRampDimensions();
-        setSoakHeight();
+        setSoakDimensions()
         setCooldownHeight();
         setReflowRampSpacerWidth();
         setReflowRampDimensions();
     });    
     document.getElementById('soakDuration').addEventListener('change', _ => {
-        setSoakWidth();
+        setSoakDimensions()
         setReflowRampSpacerWidth();
     });    
     document.getElementById('reflowRampRate').addEventListener('change', _ => {
@@ -75,10 +67,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('reflowTemperature').addEventListener('change', _ => {
         setRowHeights();
         setReflowRampDimensions();
-        setReflowHeight();
+        setReflowDimenions();
         setCooldownHeight();
     });    
     document.getElementById('reflowDuration').addEventListener('change', _ => {
-        setReflowWidth();
+        setReflowDimenions();
     });    
 });
