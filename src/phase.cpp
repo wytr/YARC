@@ -6,7 +6,7 @@ unsigned long previousFastIntervalEndTime = 0;
 unsigned long oneSecondInterval = 1000;
 unsigned long temperatureUpdateInterval = 250;
 
-int processTimeCounter = 0;
+int processIntervalCounter = 0;
 //To-Do: implement this to keep track of maximum temperature per process
 float maxProcessTemperature = 0;
 
@@ -23,5 +23,4 @@ void resetMessages()
     soakMessageSent = false;
     reflowMessageSent = false;
     cooldownMessageSent = false;
-    currentPhase = IDLE;
 }

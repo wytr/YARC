@@ -16,11 +16,12 @@ extern TFT_eSPI tft;
 
 #define SOLID_STATE_RELAY_OUTPUT_PIN 33
 
-#define BUZZER_PIN 999
+#define BUZZER_PIN 32
 #define BUZZER_CHANNEL 1
 
 void espPinInit();
 void tftInit();
 void rtcConnect();
+// DateTime getDateTimeFromRtc();
 
 #endif

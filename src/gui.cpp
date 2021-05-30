@@ -97,11 +97,6 @@ void setStartButtonState(int state)
     lv_btn_set_state(startButton, state);
 }
 
-void addProfileDropdownOption(const char *name)
-{
-    lv_dropdown_add_option(dropdownList, name, LV_DROPDOWN_POS_LAST);
-}
-
 void createTemperatureMeter(lv_obj_t *parent)
 {
     temperatureMeter = lv_linemeter_create(parent, NULL);
@@ -364,10 +359,14 @@ void createbuttonMatrix(lv_obj_t *parent)
 void createDropdown(lv_obj_t *parent)
 {
     dropdownList = lv_dropdown_create(parent, NULL);
+    refreshDropdownOptions();
+    lv_obj_align(dropdownList, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
+}
+
+void refreshDropdownOptions()
+{
     char const *profileNames = getProfileNames();
     lv_dropdown_set_options(dropdownList, profileNames);
-
-    lv_obj_align(dropdownList, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
 }
 
 void updateClock()
@@ -511,12 +510,9 @@ void loaderEvent(lv_obj_t *obj, lv_event_t event)
 
             buzzMultipleTimes(profileDropdownOption + 1);
             updateTableContent(currentProfile.soakRampDuration, currentProfile.ambientTemperature, currentProfile.soakDuration, currentProfile.soakTemperature, currentProfile.reflowDuration, currentProfile.reflowTemperature);
-            dataPointDuration = ((currentProfile.soakRampDuration + currentProfile.soakDuration + currentProfile.reflowDuration) / dataPoints);
-            //Serial.println(dataPointDuration);
         }
         else
         {
-
             buzzAlarm();
             Serial.println("CANT CHANGE PROFILE WHILE NOT IN IDLE!");
         }

@@ -18,7 +18,7 @@ extern unsigned long oneSecondInterval;
 extern unsigned long temperatureUpdateInterval;
 extern unsigned long previousFastIntervalEndTime;
 
-extern int processTimeCounter;
+extern int processIntervalCounter;
 //To-Do: implement this to keep track of maximum temperature per process
 extern float maxProcessTemperature;
 

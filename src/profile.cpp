@@ -7,7 +7,7 @@
 #include "buzz.h"
 #include "periphery.h"
 
-int dataPointIterator = 0;
+int dataPointIterator = 1;
 
 profile currentProfile = {};
 
@@ -35,11 +35,10 @@ void resetStates()
     digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
     buzzAlarm();
 
-    currentProfile.cooldownCounter = 0;
     currentProfile.preheatCounter = 0;
     currentProfile.soakCounter = 0;
     currentProfile.reflowCounter = 0;
-    dataPointIterator = 0;
+    dataPointIterator = 1;
 
     setStatusLabel("Status: COOLDOWN");
     setStartButtonLabel("START");

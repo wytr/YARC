@@ -20,16 +20,16 @@ float currentTargetTemperature;
 boolean thermocoupleError = false;
 boolean ambientTemperatureSet = false;
 
+//DateTime currentDateTime;
+
 void mainSystemSetup()
 {
     tftInit();
-
     espPinInit();
     buzzStartup();
     rtcConnect();
+    //currentDateTime = getDateTimeFromRtc();
     pidSetup();
-
-    dataPointDuration = ((currentProfile.soakRampDuration + currentProfile.soakDuration + currentProfile.reflowDuration) / dataPoints);
 }
 
 void mainSystem()
@@ -57,8 +57,10 @@ void mainSystem()
             setStartButtonLabel(LV_SYMBOL_WARNING);
             setIndicatorLabel(LV_SYMBOL_WARNING);
         }
-
-        if (processTimeCounter == dataPointIterator * dataPointDuration)
+        Serial.println(String("processIntervalCounter: ") + processIntervalCounter);
+        Serial.println(String("dataPointIterator: ") + dataPointIterator);
+        Serial.println(String("dataPointDuration: ") + dataPointDuration);
+        if (processIntervalCounter != 0 && processIntervalCounter == dataPointIterator * dataPointDuration)
         {
             setNextChartPoints(currentTemperature, currentTargetTemperature);
             dataPointIterator++;
@@ -70,7 +72,7 @@ void mainSystem()
         }
 
         Input = currentTemperature;
-
+        //currentDateTime = currentDateTime + 1;
         updateClock();
 
         switch (currentPhase)
@@ -80,7 +82,7 @@ void mainSystem()
             setIndicatorLabel(LV_SYMBOL_MINUS);
             currentTargetTemperature = 0;
             setStatusLabel("Status: IDLE");
-            processTimeCounter = 0;
+            processIntervalCounter = 0;
             if (idleMessageSent == false)
             {
                 Serial.println("STATUS: IDLE");
@@ -90,14 +92,18 @@ void mainSystem()
             break;
 
         case PREHEAT:
-            processTimeCounter++;
+            processIntervalCounter++;
             myPID.SetTunings(PID_KP_PREHEAT, PID_KI_PREHEAT, PID_KD_PREHEAT);
             setStatusLabel("Status: PREHEAT");
 
             if (!ambientTemperatureSet)
             {
+                Serial.println("ambientTemperatureSet");
                 currentProfile.ambientTemperature = currentTemperature;
-                currentProfile.soakRampDuration = (currentProfile.soakTemperature - currentTemperature) / currentProfile.soakRampRate;
+                currentProfile.soakRampDuration = (currentProfile.soakTemperature - currentProfile.ambientTemperature) / currentProfile.soakRampRate;
+                float reflowRampDuration = (currentProfile.reflowTemperature - currentProfile.soakTemperature) / currentProfile.reflowRampRate;
+                int diagramCooldownDurationBuffer = 5;
+                dataPointDuration = ((currentProfile.soakRampDuration + currentProfile.soakDuration + currentProfile.reflowDuration + reflowRampDuration + diagramCooldownDurationBuffer) / dataPoints);
                 ambientTemperatureSet = true;
             }
 
@@ -121,7 +127,7 @@ void mainSystem()
             break;
 
         case SOAK:
-            processTimeCounter++;
+            processIntervalCounter++;
             myPID.SetTunings(PID_KP_SOAK, PID_KI_SOAK, PID_KD_SOAK);
             setStatusLabel("Status: SOAK");
             if (currentProfile.soakCounter < currentProfile.soakDuration)
@@ -146,9 +152,11 @@ void mainSystem()
             break;
 
         case REFLOW:
-            processTimeCounter++;
+            processIntervalCounter++;
             myPID.SetTunings(PID_KP_REFLOW, PID_KI_REFLOW, PID_KD_REFLOW);
             setStatusLabel("Status: REFLOW");
+            Serial.println(String("reflowCounter: ") + currentProfile.reflowCounter);
+            Serial.println(String("reflowDuration: ") + currentProfile.reflowDuration);
             if (currentProfile.reflowCounter < currentProfile.reflowDuration)
             {
                 if (currentTargetTemperature < (currentProfile.reflowTemperature - 2))
@@ -184,11 +192,11 @@ void mainSystem()
                 Serial.println("STATUS: COOLDOWN");
                 cooldownMessageSent = true;
             }
-            currentProfile.cooldownCounter++;
-            if (currentProfile.cooldownCounter >= currentProfile.cooldownDuration || currentTemperature < 50.0)
+            if (currentTemperature < 50.0)
             {
-                currentProfile.cooldownCounter = 0;
                 resetMessages();
+                ambientTemperatureSet = false;
+                currentPhase = IDLE;
             }
             Setpoint = currentTargetTemperature;
             break;
@@ -227,7 +235,6 @@ void mainSystem()
 void systemTask(void *parameter)
 {
     mainSystemSetup();
-
     while (1)
     {
         mainSystem();
@@ -282,9 +289,8 @@ void webInterfaceTask(void *parameter)
                                                                                      data = json.as<JsonObject>();
 
                                                                                      String response;
-                                                                                     const char *option = data["name"];
-                                                                                     addProfileDropdownOption(option);
                                                                                      updateProfilesJson(data);
+                                                                                     refreshDropdownOptions();
                                                                                      serializeJson(data, response);
                                                                                      request->send(200, "application/json", response);
                                                                                      Serial.println(response);
@@ -297,8 +303,8 @@ void webInterfaceTask(void *parameter)
 
                                                                                      String response;
                                                                                      const char *option = data["name"];
-                                                                                     addProfileDropdownOption(option);
                                                                                      removeProfileFromJson(option);
+                                                                                     refreshDropdownOptions();
                                                                                      serializeJson(data, response);
                                                                                      request->send(200, "application/json", response);
                                                                                      Serial.println(response);

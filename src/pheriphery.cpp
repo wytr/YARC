@@ -34,9 +34,14 @@ void rtcConnect()
     {
         Serial.println("RTC lost power, lets set the time!");
         // following line sets the RTC to the date &amp; time this sketch was compiled
-        //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+        rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
         // This line sets the RTC with an explicit date &amp; time, for example to set
         // May 20, 2021 at 7pm you would call:
-        //rtc.adjust(DateTime(2021, 5, 20, 19, 40, 0));
+        // rtc.adjust(DateTime(2021, 5, 30, 12, 16, 0));
     }
 }
+
+// DateTime getDateTimeFromRtc()
+// {
+//     return rtc.now();
+// }
