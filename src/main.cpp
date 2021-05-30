@@ -276,27 +276,36 @@ void webInterfaceTask(void *parameter)
     server.on("/create-profile", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/create-profile.html", String(), false, processor); });
 
-    AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler("/create-profile", [](AsyncWebServerRequest *request, JsonVariant &json)
-                                                                           {
-                                                                               StaticJsonDocument<300> data;
-                                                                               if (json.is<JsonArray>())
-                                                                               {
-                                                                                   data = json.as<JsonArray>();
-                                                                               }
-                                                                               else if (json.is<JsonObject>())
-                                                                               {
-                                                                                   data = json.as<JsonObject>();
-                                                                               }
-                                                                               String response;
-                                                                               const char *option = data["name"];
-                                                                               addProfileDropdownOption(option);
-                                                                               updateProfilesJson(data);
-                                                                               serializeJson(data, response);
-                                                                               request->send(200, "application/json", response);
-                                                                               Serial.println(response);
-                                                                           });
+    AsyncCallbackJsonWebHandler *createHandler = new AsyncCallbackJsonWebHandler("/create-profile", [](AsyncWebServerRequest *request, JsonVariant &json)
+                                                                                 {
+                                                                                     StaticJsonDocument<300> data;
+                                                                                     data = json.as<JsonObject>();
 
-    server.addHandler(handler);
+                                                                                     String response;
+                                                                                     const char *option = data["name"];
+                                                                                     addProfileDropdownOption(option);
+                                                                                     updateProfilesJson(data);
+                                                                                     serializeJson(data, response);
+                                                                                     request->send(200, "application/json", response);
+                                                                                     Serial.println(response);
+                                                                                 });
+
+    AsyncCallbackJsonWebHandler *removeHandler = new AsyncCallbackJsonWebHandler("/remove-profile", [](AsyncWebServerRequest *request, JsonVariant &json)
+                                                                                 {
+                                                                                     StaticJsonDocument<300> data;
+                                                                                     data = json.as<JsonObject>();
+
+                                                                                     String response;
+                                                                                     const char *option = data["name"];
+                                                                                     addProfileDropdownOption(option);
+                                                                                     removeProfileFromJson(option);
+                                                                                     serializeJson(data, response);
+                                                                                     request->send(200, "application/json", response);
+                                                                                     Serial.println(response);
+                                                                                 });
+
+    server.addHandler(createHandler);
+    server.addHandler(removeHandler);
 
     server.begin();
 

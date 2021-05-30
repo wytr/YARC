@@ -33,5 +33,6 @@ void resetStates();
 JsonObject getProfileFromJson(char *name);
 char const *getProfileNames();
 void updateProfilesJson(StaticJsonDocument<256> newProfileJson);
+void removeProfileFromJson(const char *name);
 
 #endif

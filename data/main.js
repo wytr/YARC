@@ -28,11 +28,9 @@ function createProfileListItem(name) {
 
 function removeProfile(name) {
 	var json = {
-		name: document.getElementById('name').value		
+		name: name		
 	}
-	postRequest('remove-profile', json);	
-	document.getElementById('li' + name).remove();
-	return false;
+	postRequest('remove-profile', json, function() { document.getElementById('li' + name).remove() });		
 }
 
 
@@ -78,17 +76,17 @@ function createProfile(event) {
 			reflowTemperature: document.getElementById('reflowTemperature').value,
 			reflowDuration: document.getElementById('reflowDuration').value
 		}
-		postRequest('create-profile', json);	
+		postRequest('create-profile', json, function() { window.location = '/' } );	
 	}	
 }
 
-function postRequest(adress, json) {
+function postRequest(adress, json, callback) {
 	fetch(adress, {
 		method: 'POST',
 		headers: {
 		  'Content-Type': 'application/json',
 		},
 		body: JSON.stringify(json),
-	})
+	}).then(callback);
 }
 

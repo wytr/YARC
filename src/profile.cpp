@@ -122,27 +122,15 @@ void updateProfilesJson(StaticJsonDocument<256> newProfileJson)
     JsonObject obj;
     File file = SPIFFS.open("/profiles.json", FILE_READ);
     DynamicJsonDocument doc(file.size() + 1024);
-    if (!file)
-    {
-        Serial.println(F("Failed to create file, probably not exists"));
-        Serial.println(F("Create an empty one!"));
-        obj = doc.to<JsonObject>();
-    }
-    else
-    {
 
-        DeserializationError error = deserializeJson(doc, file);
-        if (error)
-        {
-            Serial.println(F("Error parsing JSON "));
-            Serial.println(error.c_str());
-            obj = doc.to<JsonObject>();
-        }
-        else
-        {
-            obj = doc.as<JsonObject>();
-        }
+    DeserializationError error = deserializeJson(doc, file);
+    if (error)
+    {
+        Serial.println(F("Error parsing JSON "));
+        Serial.println(error.c_str());
     }
+
+    obj = doc.as<JsonObject>();
     file.close();
 
     JsonArray profiles;
@@ -169,6 +157,39 @@ void updateProfilesJson(StaticJsonDocument<256> newProfileJson)
 
     file = SPIFFS.open("/profiles.json", FILE_WRITE);
     if (serializeJson(doc, file) == 0)
+    {
+        Serial.println(F("Failed to write to file"));
+    }
+    file.close();
+}
+
+void removeProfileFromJson(const char *name)
+{
+    File file = SPIFFS.open("/profiles.json", FILE_READ);
+    DynamicJsonDocument profilesJson(file.size() + 1024);
+    DeserializationError err = deserializeJson(profilesJson, file);
+    JsonArray array = profilesJson["profiles"];
+
+    if (err)
+    {
+        Serial.print(F("deserializeJson() failed with code "));
+        Serial.println(err.c_str());
+    }
+    else
+    {
+        for (JsonArray::iterator it = array.begin(); it != array.end(); ++it)
+        {
+            if ((*it)["name"] == name)
+            {
+                array.remove(it);
+            }
+        }
+    }
+
+    file.close();
+
+    file = SPIFFS.open("/profiles.json", FILE_WRITE);
+    if (serializeJson(profilesJson, file) == 0)
     {
         Serial.println(F("Failed to write to file"));
     }
