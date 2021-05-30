@@ -41,7 +41,7 @@ void rtcConnect()
     }
 }
 
-// DateTime getDateTimeFromRtc()
-// {
-//     return rtc.now();
-// }
+DateTime getDateTimeFromRtc()
+{
+    return rtc.now();
+}

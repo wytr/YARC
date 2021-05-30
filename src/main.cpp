@@ -20,7 +20,7 @@ float currentTargetTemperature;
 boolean thermocoupleError = false;
 boolean ambientTemperatureSet = false;
 
-//DateTime currentDateTime;
+DateTime currentDateTime;
 
 void mainSystemSetup()
 {
@@ -28,7 +28,7 @@ void mainSystemSetup()
     espPinInit();
     buzzStartup();
     rtcConnect();
-    //currentDateTime = getDateTimeFromRtc();
+    currentDateTime = getDateTimeFromRtc();
     pidSetup();
 }
 
@@ -72,8 +72,8 @@ void mainSystem()
         }
 
         Input = currentTemperature;
-        //currentDateTime = currentDateTime + 1;
-        updateClock();
+        currentDateTime = currentDateTime + 1;
+        updateClock(currentDateTime);
 
         switch (currentPhase)
         {
@@ -326,7 +326,6 @@ void guiTask(void *parameter)
 void setup()
 {
     Serial.begin(115200);
-
     xTaskCreate(systemTask, "systemTask", 4096 * 10, NULL, 1, NULL);
     vTaskDelay(500);
     xTaskCreate(webInterfaceTask, "webInterfaceTask", 4096 * 10, NULL, 1, &webInterfaceTaskHandler);

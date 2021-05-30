@@ -22,6 +22,6 @@ extern TFT_eSPI tft;
 void espPinInit();
 void tftInit();
 void rtcConnect();
-// DateTime getDateTimeFromRtc();
+DateTime getDateTimeFromRtc();
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef YARC_GUI_H
 #define YARC_GUI_H
 #include <lvgl.h>
-// #include "periphery.h"
+#include "periphery.h"
 
 extern const int dataPoints;
 extern int targetChart[];
@@ -18,6 +18,6 @@ void setStartButtonState(int state);
 void setTemperatureLabel(float value, float currentTemperature);
 void setWifiLabels(const char *ssid, const char *pw, const char *ip);
 void refreshDropdownOptions();
-void updateClock();
+void updateClock(DateTime currentDateTime);
 
 #endif

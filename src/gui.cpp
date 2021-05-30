@@ -369,11 +369,10 @@ void refreshDropdownOptions()
     lv_dropdown_set_options(dropdownList, profileNames);
 }
 
-void updateClock()
+void updateClock(DateTime currentDateTime)
 {
     char timeBuffer[9] = "hh:mm:ss";
-    DateTime now = rtc.now();
-    lv_label_set_text(clockLabel, now.toString(timeBuffer));
+    lv_label_set_text(clockLabel, currentDateTime.toString(timeBuffer));
 }
 
 void updateTableContent(float time1, float temp1, float time2, float temp2, float time3, float temp3)
