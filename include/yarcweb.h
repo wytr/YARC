@@ -13,7 +13,8 @@ extern const char *ssid;
 extern const char *password;
 extern const char *PARAM_MESSAGE;
 
+void initWebSocket();
+void notifyClients(const char *message);
 void notFound(AsyncWebServerRequest *request);
-String processor(const String &var);
 
 #endif

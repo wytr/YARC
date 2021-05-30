@@ -47,3 +47,7 @@ body {
 .collection-item {
   line-height: 2.5rem !important;
 }
+
+.canvas {
+  width: 100%;
+}

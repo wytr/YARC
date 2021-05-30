@@ -49,6 +49,16 @@ void mainSystem()
     //Every second
     if (currentTime - previousIntervalEndTime >= oneSecondInterval)
     {
+        char currentTargetTemperatureString[64];
+        sprintf(currentTargetTemperatureString, "%f", currentTargetTemperature);
+
+        char currentTemperatureString[64];
+        sprintf(currentTemperatureString, "%f", currentTemperature);
+
+        char data[200] = "";
+        char timeBuffer[8] = "mm:ss";
+        sprintf(data, "%s;%s;%s", currentDateTime.toString(timeBuffer), currentTargetTemperatureString, currentTemperatureString);
+        notifyClients(data);
 
         if (isnan(sqrt(thermocouple.readCelsius())) || (thermocouple.readCelsius() == 0.0))
         {
@@ -276,7 +286,16 @@ void webInterfaceTask(void *parameter)
     setWifiLabels(ssid, password, WiFi.softAPIP().toString().c_str());
 
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-              { request->send(SPIFFS, "/index.html", String(), false, processor); });
+              { request->send(SPIFFS, "/index.html", String()); });
+
+    server.on("/create-profile", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/create-profile.html", String()); });
+
+    server.on("/profiles", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/profiles.html", String()); });
+
+    server.on("/monitoring", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/monitoring.html", String()); });
 
     server.on("/materialize.min.css", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/materialize.min.css", "text/css"); });
@@ -290,14 +309,20 @@ void webInterfaceTask(void *parameter)
     server.on("/main.js", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/main.js", "text/javascript"); });
 
+    server.on("/webSocket.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/webSocket.js", "text/javascript"); });
+
     server.on("/diagram.js", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/diagram.js", "text/javascript"); });
 
+    server.on("/chart.min.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/chart.min.js", "text/javascript"); });
+
+    server.on("/monitoring.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/monitoring.js", "text/javascript"); });
+
     server.on("/profiles.json", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/profiles.json", "application/json"); });
-
-    server.on("/create-profile", HTTP_GET, [](AsyncWebServerRequest *request)
-              { request->send(SPIFFS, "/create-profile.html", String(), false, processor); });
 
     AsyncCallbackJsonWebHandler *createHandler = new AsyncCallbackJsonWebHandler("/create-profile", [](AsyncWebServerRequest *request, JsonVariant &json)
                                                                                  {
@@ -328,7 +353,7 @@ void webInterfaceTask(void *parameter)
 
     server.addHandler(createHandler);
     server.addHandler(removeHandler);
-
+    initWebSocket();
     server.begin();
 
     vTaskDelete(NULL);
@@ -342,9 +367,9 @@ void guiTask(void *parameter)
 void setup()
 {
     Serial.begin(115200);
-    xTaskCreate(systemTask, "systemTask", 4096 * 10, NULL, 1, NULL);
+    xTaskCreate(systemTask, "systemTask", 4096 * 12, NULL, 1, NULL);
     vTaskDelay(500);
-    xTaskCreate(webInterfaceTask, "webInterfaceTask", 4096 * 10, NULL, 1, &webInterfaceTaskHandler);
+    xTaskCreate(webInterfaceTask, "webInterfaceTask", 4096 * 12, NULL, 1, &webInterfaceTaskHandler);
 }
 
 void loop() {}
