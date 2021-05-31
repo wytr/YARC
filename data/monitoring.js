@@ -20,7 +20,7 @@ const config = {
     type: 'line',
     data: data,
     options: {
-      animation: false,
+      animation: true,
       responsive: true,
       plugins: {
         legend: {

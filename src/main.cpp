@@ -163,9 +163,9 @@ void mainSystem()
             setStatusLabel("Status: RAMPUP");
             if (currentProfile.reflowRampCounter < currentProfile.reflowRampDuration)
             {
-                if (currentTargetTemperature < (currentProfile.reflowTemperature - 2))
+                if (currentTargetTemperature < (currentProfile.reflowTemperature - currentProfile.reflowRampRate))
                 {
-                    currentTargetTemperature = currentTargetTemperature + 2;
+                    currentTargetTemperature = currentTargetTemperature + currentProfile.reflowRampRate;
                 }
                 else
                 {
@@ -305,6 +305,9 @@ void webInterfaceTask(void *parameter)
 
     server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/style.css", "text/css"); });
+
+    server.on("/logo", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/logo.png", "image/png"); });
 
     server.on("/main.js", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/main.js", "text/javascript"); });
