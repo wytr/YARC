@@ -7,7 +7,7 @@
 3. To match your wiring set the defines the corresponding value in _pindefines.h_
 4. TFT_eSPI -> User_Setup.h
 5. lvgl -> lv_conf.h (lv use canvas 1 !!!)
-6. lv_lib_qrcode -> #include "../lvgl/lvgl.h"
+6. lv_lib_qrcode -> #include "../lvgl/lvgl.h" (more todo in the .c file see todo.txt)
 7. In platformIo Build the Filesystemimage (data-folder) and upload it to the esp32 if those files are missing, the mcu will crash
 8. read todo.txt
 9. profit???
