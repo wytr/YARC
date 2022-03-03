@@ -8,7 +8,7 @@
 4. TFT_eSPI -> User_Setup.h
 5. lvgl -> lv_conf.h (lv use canvas 1 !!!)
 6. lv_lib_qrcode -> #include "../lvgl/lvgl.h" (more todo in the .c file see todo.txt)
-7. In platformIo Build the Filesystemimage (files to be uploaded to the filesystem are in the data-folder) and upload it to the esp32 if those files are missing, the mcu will crash
+7. In platformIo Build the Filesystemimage (files to be uploaded to the filesystem are in the data-folder) and upload it to the esp32 if those files are missing, the mcu will crash. You can find this option unter PlatformIo -> Home -> Quick Access -> Build Filesystemimage / Upload Filesystemimage
 9. read todo.txt
 10. profit???
 
