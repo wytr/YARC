@@ -8,5 +8,14 @@
 4. TFT_eSPI -> User_Setup.h
 5. lvgl -> lv_conf.h (lv use canvas 1 !!!)
 6. lv_lib_qrcode -> #include "../lvgl/lvgl.h"
-7. read todo.txt
-8. profit???
+7. In platformIo Build the Filesystemimage (data-folder) and upload it to the esp32 if those files are missing, the mcu will crash
+8. read todo.txt
+9. profit???
+
+
+# WEBINTERFACE
+
+At this time there are two functions implemented in the webinterface of the controller
+
+1. live monitoring and downloading of the measured datapoints (csv) -> monitoring.html
+2. creating/adding and removing profilecurves -> create-profile.html
