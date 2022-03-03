@@ -19,3 +19,9 @@ At this time there are two functions implemented in the webinterface of the cont
 
 1. live monitoring and downloading of the measured datapoints (csv) -> monitoring.html
 2. creating/adding and removing profilecurves -> create-profile.html
+
+
+# TODO / PLANS
+
+Implementing IotWebConf into this project would be a good idea. Then you could add the oven to your local network maybe using bonjour as http://yarc.local/
+from there on could be added more features for the webinterface
