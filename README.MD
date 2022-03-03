@@ -8,8 +8,5 @@
 4. TFT_eSPI -> User_Setup.h
 5. lvgl -> lv_conf.h (lv use canvas 1 !!!)
 6. lv_lib_qrcode -> #include "../lvgl/lvgl.h"
-7. profit???
-
-### Unit Testing
-
-To run unit tests execute `platformio test....` in command line
+7. read todo.txt
+8. profit???
