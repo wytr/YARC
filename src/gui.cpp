@@ -1,10 +1,15 @@
+#include <Arduino.h>
+#include <ArduinoJSON.h>
+#include "SPIFFS.h"
+#include "periphery.h"
 #include "gui.h"
 #include "Tone32.h"
 #include "buzz.h"
 #include "phase.h"
 #include "profile.h"
+#include "lv_qrcode.h"
+#include "yarcweb.h"
 
-TFT_eSPI tft = TFT_eSPI();
 lv_disp_buf_t displayBuffer;
 lv_color_t buf[LV_HOR_RES_MAX * 10];
 lv_obj_t *scr;
@@ -14,8 +19,13 @@ lv_obj_t *homeTab;
 lv_obj_t *profileTab;
 lv_obj_t *chartTab;
 lv_obj_t *miscTab;
+lv_obj_t *wifiTab;
 lv_obj_t *temperatureMeter;
 lv_obj_t *temperatureLabel;
+lv_obj_t *wifiTitleLabel;
+lv_obj_t *wifiSsidLabel;
+lv_obj_t *wifiPasswordLabel;
+lv_obj_t *webInterfaceIpLabel;
 lv_obj_t *table;
 lv_obj_t *chart;
 lv_obj_t *startButton;
@@ -26,12 +36,13 @@ lv_obj_t *indicatorLabel;
 lv_obj_t *loadButtonLabel;
 lv_obj_t *buttonMatrix;
 lv_obj_t *loadButton;
-lv_chart_series_t *chartSeriesOne;
-lv_chart_series_t *chartSeriesTwo;
+lv_chart_series_t *chartSeriesActual;
+lv_chart_series_t *chartSeriesTarget;
 lv_style_t st;
 lv_obj_t *dropdownList;
+lv_obj_t *qr;
 
-const int dataPoints = 40;
+const int dataPoints = 28;
 int targetChart[dataPoints];
 int actualChart[dataPoints];
 int profileDropdownOption;
@@ -51,36 +62,39 @@ static const char *btnm_map[] = {"1", "2", "3", "\n",
                                  "7", "8", "9", "\n",
                                  "0", "<", "OK", ""};
 
-void tftInit()
+void setIndicatorLabel(const char *text)
 {
-
-    tft.begin();        /* TFT init */
-    tft.setRotation(0); /* Landscape orientation  = 1*/
-    uint16_t calData[5] = {275, 3620, 264, 3532, 2};
-    tft.setTouch(calData);
-    lv_disp_buf_init(&displayBuffer, buf, NULL, LV_HOR_RES_MAX * 10);
+    lv_label_set_text(indicatorLabel, text);
 }
 
-void initDisplay()
+void setStartButtonLabel(const char *text)
 {
-    lv_disp_drv_t disp_drv;
-    lv_disp_drv_init(&disp_drv);
-    disp_drv.hor_res = LV_HOR_RES_MAX;
-    disp_drv.ver_res = LV_VER_RES_MAX;
-    disp_drv.flush_cb = displayFlush;
-    disp_drv.buffer = &displayBuffer;
-    lv_disp_drv_register(&disp_drv);
+    lv_label_set_text(startButtonlabel, text);
 }
 
-void initDriver()
+void setNextChartPoints(float current, float target)
 {
-    lv_indev_drv_t indev_drv;
-    lv_indev_drv_init(&indev_drv);
-    indev_drv.type = LV_INDEV_TYPE_POINTER;
-    indev_drv.read_cb = touchpadRead;
-    lv_indev_drv_register(&indev_drv);
-    lv_style_init(&st);
-    lv_style_set_text_font(&st, LV_STATE_DEFAULT, &lv_font_montserrat_18);
+    lv_chart_set_next(chart, chartSeriesActual, current);
+    lv_chart_set_next(chart, chartSeriesTarget, target);
+    lv_chart_refresh(chart);
+}
+
+void setStatusLabel(const char *text)
+{
+    lv_label_set_text(statusLabel, text);
+}
+
+void setTemperatureLabel(float value, float currentTemperature)
+{
+    char buffer[12] = {0};
+    snprintf(buffer, sizeof(buffer), "%.2f°C", value);
+    lv_label_set_text(temperatureLabel, buffer);
+    lv_linemeter_set_value(temperatureMeter, currentTemperature);
+}
+
+void setStartButtonState(int state)
+{
+    lv_btn_set_state(startButton, state);
 }
 
 void createTemperatureMeter(lv_obj_t *parent)
@@ -120,6 +134,7 @@ void createTabs(lv_obj_t *parent)
     profileTab = lv_tabview_add_tab(parent, LV_SYMBOL_SETTINGS);
     chartTab = lv_tabview_add_tab(parent, LV_SYMBOL_IMAGE);
     miscTab = lv_tabview_add_tab(parent, LV_SYMBOL_EDIT);
+    wifiTab = lv_tabview_add_tab(parent, LV_SYMBOL_WIFI);
 
     lv_page_set_scroll_propagation(profileTab, false);
     lv_page_set_scrollbar_mode(profileTab, LV_SCROLLBAR_MODE_OFF);
@@ -132,6 +147,19 @@ void createTabs(lv_obj_t *parent)
 
     lv_page_set_scroll_propagation(miscTab, false);
     lv_page_set_scrollbar_mode(miscTab, LV_SCROLLBAR_MODE_OFF);
+
+    lv_page_set_scroll_propagation(wifiTab, false);
+    lv_page_set_scrollbar_mode(wifiTab, LV_SCROLLBAR_MODE_OFF);
+}
+
+void createQrCode(lv_obj_t *parent)
+{
+    char buf[50] = "TEST";
+    sprintf(buf, "WIFI:T:WPA;S:%s;P:%s;;", ssid, password);
+    Serial.println(buf);
+    qr = lv_qrcode_create(parent, 140, lv_color_hex3(0x000), lv_color_hex3(0xeef));
+    lv_qrcode_update(qr, buf, strlen(buf));
+    lv_obj_align(qr, NULL, LV_ALIGN_IN_TOP_MID, 0, 40);
 }
 
 void createTable(lv_obj_t *parent)
@@ -198,21 +226,21 @@ void createChart(lv_obj_t *parent)
 
     /*Add two data series*/
 
-    chartSeriesTwo = lv_chart_add_series(chart, LV_COLOR_RED);
-    chartSeriesOne = lv_chart_add_series(chart, LV_COLOR_BLACK);
-    /*Set the next points on 'chartSeriesOne'*/
+    chartSeriesTarget = lv_chart_add_series(chart, LV_COLOR_RED);
+    chartSeriesActual = lv_chart_add_series(chart, LV_COLOR_BLACK);
+    /*Set the next points on 'chartSeriesActual'*/
     //const int SIZE = 20;
 
     for (int i = 0; i < dataPoints; i++)
     {
-        lv_chart_set_next(chart, chartSeriesOne, targetChart[i]);
-        lv_chart_set_next(chart, chartSeriesTwo, actualChart[i]);
+        lv_chart_set_next(chart, chartSeriesActual, targetChart[i]);
+        lv_chart_set_next(chart, chartSeriesTarget, actualChart[i]);
     }
 
-    /*Directly set points on 'chartSeriesTwo'
+    /*Directly set points on 'chartSeriesTarget'
     for (int j = 0; j < SIZE; j++)
     {
-        chartSeriesTwo->points[j] = actualChart[j];
+        chartSeriesTarget->points[j] = actualChart[j];
     }
     */
     lv_chart_refresh(chart); /*Required after direct set*/
@@ -227,7 +255,7 @@ void createTemperatureLabel(lv_obj_t *parent)
     lv_obj_set_style_local_text_font(temperatureLabel, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_16);
 }
 
-void createstatusLabel(lv_obj_t *parent)
+void createStatusLabel(lv_obj_t *parent)
 {
 
     statusLabel = lv_label_create(parent, NULL);
@@ -269,9 +297,43 @@ void createLoadButton(lv_obj_t *parent)
 
 void createLoadButtonLabel(lv_obj_t *parent)
 {
-
     loadButtonLabel = lv_label_create(parent, NULL);
     lv_label_set_text(loadButtonLabel, "LOAD");
+}
+
+void createWifiTitleLabel(lv_obj_t *parent)
+{
+    wifiTitleLabel = lv_label_create(parent, NULL);
+    lv_label_set_text(wifiTitleLabel, "WIFI");
+    lv_obj_align(wifiTitleLabel, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
+}
+
+void createWifiSsidLabel(lv_obj_t *parent)
+{
+    wifiSsidLabel = lv_label_create(parent, NULL);
+    lv_label_set_text(wifiSsidLabel, "SSID:");
+    lv_obj_align(wifiSsidLabel, NULL, LV_ALIGN_IN_LEFT_MID, 10, 60);
+}
+
+void createWifiPasswordLabel(lv_obj_t *parent)
+{
+    wifiPasswordLabel = lv_label_create(parent, NULL);
+    lv_label_set_text(wifiPasswordLabel, "PW:");
+    lv_obj_align(wifiPasswordLabel, NULL, LV_ALIGN_IN_LEFT_MID, 10, 80);
+}
+
+void createWebInterfaceIpLabel(lv_obj_t *parent)
+{
+    webInterfaceIpLabel = lv_label_create(parent, NULL);
+    lv_label_set_text(webInterfaceIpLabel, "IP:");
+    lv_obj_align(webInterfaceIpLabel, NULL, LV_ALIGN_IN_LEFT_MID, 10, 100);
+}
+
+void setWifiLabels(const char *ssid, const char *pw, const char *ip)
+{
+    lv_label_set_text_fmt(wifiSsidLabel, "SSID: %s", ssid);
+    lv_label_set_text_fmt(wifiPasswordLabel, "PW: %s", pw);
+    lv_label_set_text_fmt(webInterfaceIpLabel, "IP: %s", ip);
 }
 
 void createClockLabel(lv_obj_t *parent)
@@ -297,19 +359,20 @@ void createbuttonMatrix(lv_obj_t *parent)
 void createDropdown(lv_obj_t *parent)
 {
     dropdownList = lv_dropdown_create(parent, NULL);
-    lv_dropdown_set_options(dropdownList, "leaded\n"
-                                          "leadFree\n"
-                                          "temper\n"
-                                          "custom\n");
-
+    refreshDropdownOptions();
     lv_obj_align(dropdownList, NULL, LV_ALIGN_IN_TOP_MID, 0, 20);
 }
 
-void updateTemperatureLabel(float value)
+void refreshDropdownOptions()
 {
-    char buffer[12] = {0};
-    snprintf(buffer, sizeof(buffer), "%.2f°C", value);
-    lv_label_set_text(temperatureLabel, buffer);
+    char const *profileNames = getProfileNames();
+    lv_dropdown_set_options(dropdownList, profileNames);
+}
+
+void updateClock(DateTime currentDateTime)
+{
+    char timeBuffer[9] = "hh:mm:ss";
+    lv_label_set_text(clockLabel, currentDateTime.toString(timeBuffer));
 }
 
 void updateTableContent(float time1, float temp1, float time2, float temp2, float time3, float temp3)
@@ -323,7 +386,7 @@ void updateTableContent(float time1, float temp1, float time2, float temp2, floa
 
     snprintf(time_buffer1, sizeof(time_buffer1), "%.0fs", time1);
     //snprintf(temp_buffer1, sizeof(temp_buffer1), "%.0f°C", temp1);
-    snprintf(temp_buffer1, sizeof(temp_buffer1), "ramp", temp1);
+    snprintf(temp_buffer1, sizeof(temp_buffer1), "ramp");
     snprintf(time_buffer2, sizeof(time_buffer2), "%.0fs", time2);
     snprintf(temp_buffer2, sizeof(temp_buffer2), "%.0f°C", temp2);
     snprintf(time_buffer3, sizeof(time_buffer3), "%.0fs", time3);
@@ -350,10 +413,10 @@ void tabviewEventCallback(lv_obj_t *obj, lv_event_t event)
     }
 }
 
-void guiInit()
+void createGuiObjects()
 {
     createTabview(scr);
-    createstatusLabel(scr);
+    createStatusLabel(scr);
     createIndicator(scr);
     createTabs(tabview);
     createTemperatureMeter(homeTab);
@@ -365,8 +428,13 @@ void guiInit()
     createChart(chartTab);
     createStartButtonLabel(startButton);
     createLoadButtonLabel(loadButton);
+    createWifiTitleLabel(wifiTab);
+    createWifiSsidLabel(wifiTab);
+    createWifiPasswordLabel(wifiTab);
+    createWebInterfaceIpLabel(wifiTab);
     createClockLabel(scr);
     createbuttonMatrix(miscTab);
+    createQrCode(wifiTab);
 }
 
 void buttonMatrixEvent(lv_obj_t *obj, lv_event_t event)
@@ -374,12 +442,12 @@ void buttonMatrixEvent(lv_obj_t *obj, lv_event_t event)
     if (event == LV_EVENT_VALUE_CHANGED)
     {
         const char *txt = lv_btnmatrix_get_active_btn_text(obj);
-        if (txt == "OK")
+        if (strcmp(txt, "OK") == 1)
         {
             for (int i = 0; i < 40; i++)
             {
-                lv_chart_set_next(chart, chartSeriesOne, 0);
-                lv_chart_set_next(chart, chartSeriesTwo, 0);
+                lv_chart_set_next(chart, chartSeriesActual, 0);
+                lv_chart_set_next(chart, chartSeriesTarget, 0);
             }
             lv_chart_refresh(chart);
         }
@@ -433,31 +501,16 @@ void loaderEvent(lv_obj_t *obj, lv_event_t event)
     {
         if (currentPhase == IDLE)
         {
+            char buf[20];
+            lv_dropdown_get_selected_str(dropdownList, buf, 20);
+            JsonObject profile = getProfileFromJson(buf);
+            setProfile(profile);
 
-            if (profileDropdownOption == 0)
-            {
-                setProfile(leaded);
-            }
-            if (profileDropdownOption == 1)
-            {
-                setProfile(leadFree);
-            }
-            if (profileDropdownOption == 2)
-            {
-                setProfile(temper);
-            }
-            if (profileDropdownOption == 3)
-            {
-                setProfile(custom);
-            }
             buzzMultipleTimes(profileDropdownOption + 1);
-            updateTableContent(currentProfile.preheatTime, currentProfile.preheatTemperature, currentProfile.soakTime, currentProfile.soakTemperature, currentProfile.reflowTime, currentProfile.reflowTemperature);
-            dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / dataPoints);
-            //Serial.println(dataPointDuration);
+            updateTableContent(currentProfile.soakRampDuration, currentProfile.ambientTemperature, currentProfile.soakDuration, currentProfile.soakTemperature, currentProfile.reflowDuration, currentProfile.reflowTemperature);
         }
         else
         {
-
             buzzAlarm();
             Serial.println("CANT CHANGE PROFILE WHILE NOT IN IDLE!");
         }
@@ -520,4 +573,38 @@ void setCallbacks()
     lv_obj_set_event_cb(loadButton, loaderEvent);
     lv_obj_set_event_cb(buttonMatrix, buttonMatrixEvent);
     lv_obj_set_event_cb(dropdownList, profileHandler);
+}
+
+void initDisplay()
+{
+    lv_disp_buf_init(&displayBuffer, buf, NULL, LV_HOR_RES_MAX * 10);
+    lv_disp_drv_t disp_drv;
+    lv_disp_drv_init(&disp_drv);
+    disp_drv.hor_res = LV_HOR_RES_MAX;
+    disp_drv.ver_res = LV_VER_RES_MAX;
+    disp_drv.flush_cb = displayFlush;
+    disp_drv.buffer = &displayBuffer;
+    lv_disp_drv_register(&disp_drv);
+}
+
+void initDriver()
+{
+    lv_indev_drv_t indev_drv;
+    lv_indev_drv_init(&indev_drv);
+    indev_drv.type = LV_INDEV_TYPE_POINTER;
+    indev_drv.read_cb = touchpadRead;
+    lv_indev_drv_register(&indev_drv);
+    lv_style_init(&st);
+    lv_style_set_text_font(&st, LV_STATE_DEFAULT, &lv_font_montserrat_18);
+}
+
+void initGui()
+{
+    lv_init();
+    lvThemeInit();
+    initDisplay();
+    initDriver();
+    screenInit();
+    createGuiObjects();
+    setCallbacks();
 }

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YARC</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" type="text/css" href="materialize.min.css">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+  <div class="header valign-wrapper">
+    <img src="/logo" alt="logo" style="width: 64px; padding-right: 10px;">
+    <span>Yet Another Reflow Controller</span>
+  </div>
+  <!-- <p>STATUS: <strong> %STATE%</strong></p> -->
+  <h2 class="center-align">Profiles</h2>
+  <div class="row">
+    <div class="col s12 m8 l4 offset-m2 offset-l4">    
+      <ul id="ulProfiles" class="collection">
+      </ul>
+
+      <div class="click-to-toggle direction-top direction-left center-align">
+        <a class="btn-floating btn-large green" href="create-profile">
+          +
+        </a>
+        <div class="left-align">
+          <a href="/" class="btn-small grey lighten-2 black-text">Back</a>
+        </div>         
+      </div>
+    </div>
+  </div>  
+  <script src="main.js"></script>
+  <script src="webSocket.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      loadProfiles();
+    });
+  </script>
+</body>
+</html>

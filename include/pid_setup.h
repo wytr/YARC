@@ -22,4 +22,6 @@ extern double Setpoint, Input, Output, Kp, Ki, Kd;
 extern int WindowSize;
 extern unsigned long windowStartTime;
 
+void pidSetup();
+
 #endif

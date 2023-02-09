@@ -6,8 +6,9 @@ enum phase
     IDLE = 0,
     PREHEAT = 1,
     SOAK = 2,
-    REFLOW = 3,
-    COOLDOWN = 4
+    REFLOWRAMP = 3,
+    REFLOW = 4,
+    COOLDOWN = 5
 
 };
 extern phase currentPhase;
@@ -18,7 +19,7 @@ extern unsigned long oneSecondInterval;
 extern unsigned long temperatureUpdateInterval;
 extern unsigned long previousFastIntervalEndTime;
 
-extern int processTimeCounter;
+extern int processIntervalCounter;
 //To-Do: implement this to keep track of maximum temperature per process
 extern float maxProcessTemperature;
 
@@ -26,7 +27,10 @@ extern float maxProcessTemperature;
 extern bool idleMessageSent;
 extern bool preheatMessageSent;
 extern bool soakMessageSent;
+extern bool reflowRampMessageSent;
 extern bool reflowMessageSent;
 extern bool cooldownMessageSent;
+
+void resetMessages();
 
 #endif

@@ -1,0 +1,102 @@
+
+<div class="grid-container">
+  <div id="reflow-ramp-spacer"></div>
+  <div id="reflow-ramp"></div>
+  <div id="reflow"></div>
+  <div id="soak-ramp"></div>
+  <div id="soak"></div>
+  <div id="reflow-ramp-bottom"></div>  
+  <div id="cooldown"></div>
+  <div id="soak-ramp-label" class="center">trs</div>
+  <div id="soak-label" class="center">ts</div>
+  <div id="reflow-ramp-label" class="center">trr</div>
+  <div id="reflow-label" class="center">tr</div>
+  <div id="cooldown-label" class="center">tc</div>
+</div>
+
+<style>
+.grid-container {
+  display: grid;
+  grid-template-areas:
+    'reflow-ramp-spacer reflow-ramp-spacer reflow-ramp reflow cooldown'
+    'soak-ramp soak reflow-ramp-bottom reflow cooldown'
+	'soak-ramp-label soak-label reflow-ramp-label reflow-label cooldown-label';
+  grid-gap:0;
+  grid-column-gap: 0;
+  justify-content: center;
+  grid-template-rows: 80px 200px 20px;
+}
+
+div {
+  padding: 0;
+  margin: 0;  
+}
+
+#reflow-ramp-spacer{
+  grid-area: soak-ramp-spacer;
+}
+#soak-ramp {
+  grid-area: soak-ramp;
+  width: 0;
+  height: 0;
+  border-bottom: 200px solid red;
+  border-left: 100px solid transparent;
+}
+    
+#reflow-ramp {
+  grid-area: reflow-ramp;
+  width: 0;
+  height: 0;
+  border-bottom: 100px solid red;
+  border-left: 100px solid transparent;
+}
+
+#cooldown {
+  grid-area: cooldown;
+  width: 0;
+  height: 0;
+  border-bottom: 280px solid red;
+  border-right: 100px solid transparent;
+}
+
+#soak {
+  grid-area: soak;
+  width: 100px;
+  height: 100%;
+  background-color: red;
+}
+
+#reflow-ramp-bottom {
+  grid-area: reflow-ramp-bottom;
+  width: 100px;
+  height:100%;
+  background-color: red;
+}
+
+#reflow {
+    grid-area: reflow;
+  width: 100px;
+  height: 100%;
+  background-color: red;
+}
+
+  #soak-ramp-label {
+	grid-area: soak-ramp-label;
+  }
+  #soak-label {
+	grid-area: soak-label;
+  }
+  #reflow-ramp-label {
+	grid-area: reflow-ramp-label;
+  }
+  #reflow-label {
+	grid-area: reflow-label;
+  }
+  #cooldown-label {
+	grid-area: cooldown-label;
+  }
+  
+   .center {
+   text-align: center;
+   }
+</style>

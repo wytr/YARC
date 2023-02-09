@@ -2,204 +2,74 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <RTClib.h>
-#include <max6675.h>
 #include <PID_v1.h>
-#include <Plotter.h>
 
-#include "pindefines.h"
+#include "periphery.h"
 #include "buzz.h"
 #include "gui.h"
 #include "phase.h"
 #include "profile.h"
 #include "pid_setup.h"
+#include "yarcweb.h"
 
-#define USE_PROCESSING_PLOTTER 0
-
-#if USE_PROCESSING_PLOTTER != 0
-
-double x;
-double y;
-Plotter p;
-
-#endif
-
-MAX6675 thermocouple(THERMOCOUPLE_CLOCK_PIN, THERMOCOUPLE_CHIP_SELECT_PIN, THERMOCOUPLE_DATA_OUT_PIN);
-
-RTC_DS3231 rtc;
+TaskHandle_t webInterfaceTaskHandler;
+TaskHandle_t guiTaskHandler;
 
 float currentTemperature;
 float currentTargetTemperature;
 boolean thermocoupleError = false;
-boolean preTemperatureSet = false;
+boolean ambientTemperatureSet = false;
 
-int dataPointIterator = 0;
+DateTime currentDateTime;
 
-void espPinInit()
+void mainSystemSetup()
 {
-    pinMode(THERMOCOUPLE_VCC_PIN, OUTPUT);
-    digitalWrite(THERMOCOUPLE_VCC_PIN, HIGH);
-    pinMode(SOLID_STATE_RELAY_OUTPUT_PIN, OUTPUT);
-}
-
-void pidSetup()
-{
-    windowStartTime = millis();
-    Setpoint = 0;
-    myPID.SetOutputLimits(0, WindowSize);
-    myPID.SetSampleTime(PID_SAMPLE_TIME);
-    myPID.SetMode(AUTOMATIC);
-}
-
-void rtcConnect()
-{
-
-    if (!rtc.begin())
-    {
-        Serial.println("Couldn't find RTC");
-        while (1)
-            ;
-    }
-
-    if (rtc.lostPower())
-    {
-        Serial.println("RTC lost power, lets set the time!");
-        // following line sets the RTC to the date &amp; time this sketch was compiled
-        rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-        // This line sets the RTC with an explicit date &amp; time, for example to set
-        // January 21, 2014 at 3am you would call:
-        // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-    }
-}
-
-void resetStates()
-{
-    Output = 0;
-
-    digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
-    buzzAlarm();
-
-    currentProfile.cooldownCounter = 0;
-    currentProfile.preheatCounter = 0;
-    currentProfile.soakCounter = 0;
-    currentProfile.reflowCounter = 0;
-    dataPointIterator = 0;
-
-    lv_label_set_text(statusLabel, "Status: COOLDOWN");
-    lv_label_set_text(startButtonlabel, "START");
-    lv_btn_set_state(startButton, LV_BTN_STATE_CHECKED_RELEASED);
-}
-
-void resetMessages()
-{
-    idleMessageSent = false;
-    preheatMessageSent = false;
-    soakMessageSent = false;
-    reflowMessageSent = false;
-    cooldownMessageSent = false;
-    currentPhase = IDLE;
-}
-
-void serialPrintLog()
-{
-    Serial.print(currentTemperature);
-    Serial.print("    ");
-    Serial.print(currentTargetTemperature);
-    Serial.print("    ");
-    Serial.print(Output);
-    Serial.print("    ");
-    Serial.print("processtime = ");
-    Serial.print(processTimeCounter);
-    Serial.print("    ");
-    Serial.print(" Kp = ");
-    Serial.print(myPID.GetKp());
-    Serial.print(" Ki = ");
-    Serial.print(myPID.GetKi(), 4);
-    Serial.print(" Kd = ");
-    Serial.println(myPID.GetKd());
-}
-
-void updateClock()
-{
-    char timeBuffer[9] = "hh:mm:ss";
-    DateTime now = rtc.now();
-    lv_label_set_text(clockLabel, now.toString(timeBuffer));
-}
-
-float calculateTargetTemperature()
-{
-    float ret = currentProfile.preheatTemperature + ((currentProfile.soakTemperature - currentProfile.preheatTemperature) / currentProfile.preheatTime) * currentProfile.preheatCounter;
-
-    return ret;
-}
-
-void setup()
-{
-#if USE_PROCESSING_PLOTTER != 0
-    p.Begin();
-    p.AddTimeGraph("PID-Regler", 1000, "momentane Temperatur", x, "Zieltemperatur", y);
-#endif
-
-#if USE_PROCESSING_PLOTTER == 0
-    Serial.begin(115200);
-#endif
-
     tftInit();
-    lv_init();
-    lvThemeInit();
     espPinInit();
     buzzStartup();
-
-    initDisplay();
-
-    initDriver();
-    screenInit();
-    guiInit();
-    setCallbacks();
-
     rtcConnect();
-
+    currentDateTime = getDateTimeFromRtc();
     pidSetup();
-
-    dataPointDuration = ((currentProfile.preheatTime + currentProfile.soakTime + currentProfile.reflowTime) / dataPoints);
 }
 
-void loop()
+void mainSystem()
 {
-#if USE_PROCESSING_PLOTTER != 0
-    x = currentTemperature;
-    y = currentTargetTemperature;
-    p.Plot(); // usually called within loop()
-#endif
 
     currentTime = millis();
 
-    //Every 220 milliseconds (-> Datasheet MAX6675 -> max conversion time)
+    //Every 250 milliseconds (-> Datasheet MAX6675 -> max conversion time)
     if (currentTime - previousFastIntervalEndTime >= temperatureUpdateInterval)
     {
 
         currentTemperature = thermocouple.readCelsius();
-        updateTemperatureLabel(thermocouple.readCelsius());
-        lv_linemeter_set_value(temperatureMeter, currentTemperature);
+        setTemperatureLabel(thermocouple.readCelsius(), currentTemperature);
         previousFastIntervalEndTime = currentTime;
     }
 
     //Every second
     if (currentTime - previousIntervalEndTime >= oneSecondInterval)
     {
+        char currentTargetTemperatureString[64];
+        sprintf(currentTargetTemperatureString, "%f", currentTargetTemperature);
+
+        char currentTemperatureString[64];
+        sprintf(currentTemperatureString, "%f", currentTemperature);
+
+        char data[200] = "";
+        char timeBuffer[8] = "mm:ss";
+        sprintf(data, "%s;%s;%s", currentDateTime.toString(timeBuffer), currentTargetTemperatureString, currentTemperatureString);
+        notifyClients(data);
 
         if (isnan(sqrt(thermocouple.readCelsius())) || (thermocouple.readCelsius() == 0.0))
         {
             currentPhase = COOLDOWN;
             Serial.println("THERMOCOUPLE NOT CONNECTED OR DAMAGED!");
-            lv_label_set_text(startButtonlabel, LV_SYMBOL_WARNING);
-            lv_label_set_text(indicatorLabel, LV_SYMBOL_WARNING);
+            setStartButtonLabel(LV_SYMBOL_WARNING);
+            setIndicatorLabel(LV_SYMBOL_WARNING);
         }
-
-        if (processTimeCounter == dataPointIterator * dataPointDuration)
+        if (processIntervalCounter != 0 && processIntervalCounter == dataPointIterator * dataPointDuration)
         {
-            lv_chart_set_next(chart, chartSeriesOne, currentTemperature);
-            lv_chart_set_next(chart, chartSeriesTwo, currentTargetTemperature);
-            lv_chart_refresh(chart);
+            setNextChartPoints(currentTemperature, currentTargetTemperature);
             dataPointIterator++;
         }
 
@@ -209,20 +79,17 @@ void loop()
         }
 
         Input = currentTemperature;
-
-        updateClock();
-        serialPrintLog();
+        currentDateTime = currentDateTime + 1;
+        updateClock(currentDateTime);
 
         switch (currentPhase)
         {
 
         case IDLE:
-
-            lv_label_set_text(indicatorLabel, LV_SYMBOL_MINUS);
-            currentTargetTemperature = currentProfile.IdleTemperature;
-            lv_label_set_text(statusLabel, "Status: IDLE");
-            processTimeCounter = 0;
-            lv_label_set_text(indicatorLabel, LV_SYMBOL_MINUS);
+            setIndicatorLabel(LV_SYMBOL_MINUS);
+            currentTargetTemperature = 0;
+            setStatusLabel("Status: IDLE");
+            processIntervalCounter = 0;
             if (idleMessageSent == false)
             {
                 Serial.println("STATUS: IDLE");
@@ -232,18 +99,21 @@ void loop()
             break;
 
         case PREHEAT:
-
-            processTimeCounter++;
+            processIntervalCounter++;
             myPID.SetTunings(PID_KP_PREHEAT, PID_KI_PREHEAT, PID_KD_PREHEAT);
-            lv_label_set_text(statusLabel, "Status: PREHEAT");
+            setStatusLabel("Status: PREHEAT");
 
-            if (!preTemperatureSet)
+            if (!ambientTemperatureSet)
             {
-                currentProfile.preheatTemperature = currentTemperature;
-                preTemperatureSet = true;
+                Serial.println("ambientTemperatureSet");
+                currentProfile.ambientTemperature = currentTemperature;
+                currentProfile.soakRampDuration = (currentProfile.soakTemperature - currentProfile.ambientTemperature) / currentProfile.soakRampRate;
+                int diagramCooldownDurationBuffer = 5;
+                dataPointDuration = ((currentProfile.soakRampDuration + currentProfile.soakDuration + currentProfile.reflowDuration + currentProfile.reflowRampDuration + diagramCooldownDurationBuffer) / dataPoints);
+                ambientTemperatureSet = true;
             }
 
-            if (currentProfile.preheatCounter < currentProfile.preheatTime)
+            if (currentProfile.preheatCounter < currentProfile.soakRampDuration)
             {
                 currentTargetTemperature = calculateTargetTemperature();
                 if (!preheatMessageSent)
@@ -263,11 +133,10 @@ void loop()
             break;
 
         case SOAK:
-
-            processTimeCounter++;
+            processIntervalCounter++;
             myPID.SetTunings(PID_KP_SOAK, PID_KI_SOAK, PID_KD_SOAK);
-            lv_label_set_text(statusLabel, "Status: SOAK");
-            if (currentProfile.soakCounter < currentProfile.soakTime)
+            setStatusLabel("Status: SOAK");
+            if (currentProfile.soakCounter < currentProfile.soakDuration)
             {
                 currentTargetTemperature = currentProfile.soakTemperature;
 
@@ -283,27 +152,48 @@ void loop()
             {
                 currentProfile.soakCounter = 0;
                 soakMessageSent = false;
-                currentPhase = REFLOW;
+                currentPhase = REFLOWRAMP;
             }
             Setpoint = currentTargetTemperature;
             break;
 
-        case REFLOW:
-
-            processTimeCounter++;
+        case REFLOWRAMP:
+            processIntervalCounter++;
             myPID.SetTunings(PID_KP_REFLOW, PID_KI_REFLOW, PID_KD_REFLOW);
-            lv_label_set_text(statusLabel, "Status: REFLOW");
-            if (currentProfile.reflowCounter < currentProfile.reflowTime)
+            setStatusLabel("Status: RAMPUP");
+            if (currentProfile.reflowRampCounter < currentProfile.reflowRampDuration)
             {
-                if (currentTargetTemperature < (currentProfile.reflowTemperature - 2))
+                if (currentTargetTemperature < (currentProfile.reflowTemperature - currentProfile.reflowRampRate))
                 {
-                    currentTargetTemperature = currentTargetTemperature + 2;
+                    currentTargetTemperature = currentTargetTemperature + currentProfile.reflowRampRate;
                 }
                 else
                 {
                     currentTargetTemperature = currentProfile.reflowTemperature;
                 }
 
+                if (reflowRampMessageSent == false)
+                {
+                    Serial.println("STATUS: RAMPUP");
+                    reflowRampMessageSent = true;
+                }
+                currentProfile.reflowRampCounter++;
+            }
+            else
+            {
+                currentProfile.reflowRampCounter = 0;
+                reflowRampMessageSent = false;
+                currentPhase = REFLOW;
+            }
+            Setpoint = currentTargetTemperature;
+            break;
+
+        case REFLOW:
+            processIntervalCounter++;
+            myPID.SetTunings(PID_KP_REFLOW, PID_KI_REFLOW, PID_KD_REFLOW);
+            setStatusLabel("Status: REFLOW");
+            if (currentProfile.reflowCounter < currentProfile.reflowDuration)
+            {
                 if (reflowMessageSent == false)
                 {
                     Serial.println("STATUS: REFLOW");
@@ -324,15 +214,15 @@ void loop()
             resetStates();
             if (!cooldownMessageSent)
             {
-                currentTargetTemperature = currentProfile.IdleTemperature;
+                currentTargetTemperature = 0;
                 Serial.println("STATUS: COOLDOWN");
                 cooldownMessageSent = true;
             }
-            currentProfile.cooldownCounter++;
-            if (currentProfile.cooldownCounter >= currentProfile.cooldownTime || currentTemperature < 50.0)
+            if (currentTemperature < 50.0)
             {
-                currentProfile.cooldownCounter = 0;
                 resetMessages();
+                ambientTemperatureSet = false;
+                currentPhase = IDLE;
             }
             Setpoint = currentTargetTemperature;
             break;
@@ -353,18 +243,136 @@ void loop()
         }
         if (Output > millis() - windowStartTime)
         {
-            lv_label_set_text(indicatorLabel, LV_SYMBOL_UP);
+            setIndicatorLabel(LV_SYMBOL_UP);
             digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, HIGH);
         }
         else
         {
+            setIndicatorLabel(LV_SYMBOL_DOWN);
             digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
-            lv_label_set_text(indicatorLabel, LV_SYMBOL_DOWN);
         }
     }
-
     else
+    {
         digitalWrite(SOLID_STATE_RELAY_OUTPUT_PIN, LOW);
-
-    lv_task_handler();
+    }
 }
+
+void systemTask(void *parameter)
+{
+    mainSystemSetup();
+    while (1)
+    {
+        mainSystem();
+        lv_task_handler();
+    }
+}
+
+void webInterfaceTask(void *parameter)
+{
+    Serial.println("webInterfaceTask");
+
+    if (!SPIFFS.begin())
+    {
+        Serial.println("An Error has occurred while mounting SPIFFS");
+        return;
+    }
+    initGui();
+    WiFi.mode(WIFI_AP); //Access Point mode
+    WiFi.softAP(ssid, password);
+
+    // Print ESP32 Local IP Address
+    Serial.println(WiFi.softAPIP());
+    setWifiLabels(ssid, password, WiFi.softAPIP().toString().c_str());
+
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/index.html", String()); });
+
+    server.on("/create-profile", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/create-profile.html", String()); });
+
+    server.on("/profiles", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/profiles.html", String()); });
+
+    server.on("/monitoring", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/monitoring.html", String()); });
+
+    server.on("/materialize.min.css", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/materialize.min.css", "text/css"); });
+
+    server.on("/diagram.css", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/diagram.css", "text/css"); });
+
+    server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/style.css", "text/css"); });
+
+    server.on("/logo", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/logo.png", "image/png"); });
+
+    server.on("/main.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/main.js", "text/javascript"); });
+
+    server.on("/webSocket.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/webSocket.js", "text/javascript"); });
+
+    server.on("/diagram.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/diagram.js", "text/javascript"); });
+
+    server.on("/chart.min.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/chart.min.js", "text/javascript"); });
+
+    server.on("/monitoring.js", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/monitoring.js", "text/javascript"); });
+
+    server.on("/profiles.json", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/profiles.json", "application/json"); });
+
+    AsyncCallbackJsonWebHandler *createHandler = new AsyncCallbackJsonWebHandler("/create-profile", [](AsyncWebServerRequest *request, JsonVariant &json)
+                                                                                 {
+                                                                                     StaticJsonDocument<300> data;
+                                                                                     data = json.as<JsonObject>();
+
+                                                                                     String response;
+                                                                                     updateProfilesJson(data);
+                                                                                     refreshDropdownOptions();
+                                                                                     serializeJson(data, response);
+                                                                                     request->send(200, "application/json", response);
+                                                                                     Serial.println(response);
+                                                                                 });
+
+    AsyncCallbackJsonWebHandler *removeHandler = new AsyncCallbackJsonWebHandler("/remove-profile", [](AsyncWebServerRequest *request, JsonVariant &json)
+                                                                                 {
+                                                                                     StaticJsonDocument<300> data;
+                                                                                     data = json.as<JsonObject>();
+
+                                                                                     String response;
+                                                                                     const char *option = data["name"];
+                                                                                     removeProfileFromJson(option);
+                                                                                     refreshDropdownOptions();
+                                                                                     serializeJson(data, response);
+                                                                                     request->send(200, "application/json", response);
+                                                                                     Serial.println(response);
+                                                                                 });
+
+    server.addHandler(createHandler);
+    server.addHandler(removeHandler);
+    initWebSocket();
+    server.begin();
+
+    vTaskDelete(NULL);
+}
+
+void guiTask(void *parameter)
+{
+    Serial.println("hello");
+}
+
+void setup()
+{
+    Serial.begin(115200);
+    xTaskCreate(systemTask, "systemTask", 4096 * 12, NULL, 1, NULL);
+    vTaskDelay(500);
+    xTaskCreate(webInterfaceTask, "webInterfaceTask", 4096 * 12, NULL, 1, &webInterfaceTaskHandler);
+}
+
+void loop() {}

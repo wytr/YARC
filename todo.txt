@@ -1,0 +1,11 @@
+commit in lv_lib_qrcode nuked project.. 
+in file "lv_qrcode.c" line 49 to 52 has to be replaced with:
+
+#if LV_VERSION_CHECK(6,0,0)
+   lv_mem_assert(buf);
+#else
+   LV_ASSERT_MEM(buf);
+#endif
+   if(buf == NULL) return NULL;
+
+   lv_obj_t * canvas = lv_canvas_create(parent, NULL);

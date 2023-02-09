@@ -1,0 +1,8 @@
+{
+    "profiles": [
+        {"name":"leaded","soakRampRate":"2","soakTemperature":"150","soakDuration":"80","reflowRampRate":"2","reflowTemperature":"230","reflowDuration":"60"},
+        {"name":"leadFree","soakRampRate":"2","soakTemperature":"150","soakDuration":"80","reflowRampRate":"2","reflowTemperature":"250","reflowDuration":"60"},
+        {"name":"temper","soakRampRate":"2","soakTemperature":"60","soakDuration":"1000","reflowRampRate":"2","reflowTemperature":"60","reflowDuration":"1000"},
+        {"name":"test","soakRampRate":"4","soakTemperature":"100","soakDuration":"10","reflowRampRate":"4","reflowTemperature":"200","reflowDuration":"10"}
+    ]
+}

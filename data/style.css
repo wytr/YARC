@@ -1,0 +1,53 @@
+body {
+  background-color: #f6f6f6;
+}
+
+.header {
+  padding: 20px;
+  margin: 20px;
+  border-bottom: 1px solid lightgray;
+}
+
+.header svg {
+  width: 20px;
+  height: 20px;
+  margin: 0 10px;
+}
+
+.header span {
+  font-size: 18.5px;
+}
+
+.unit::after {
+  position: absolute;
+  top: 11.1px;
+  right: 20px;
+}
+
+.unit-cs::after {
+  content: "\00b0 C/s";
+}
+
+.unit-s::after {
+  content: "s";
+}
+
+.unit-c::after {
+  content: "\00b0 C";
+}
+
+.btn-floating {
+  font-size: 27px;
+}
+
+.remove-btn {
+  float: right;
+}
+
+.collection-item {
+  line-height: 2.5rem !important;
+}
+
+.canvas {
+  width: 100%;
+}

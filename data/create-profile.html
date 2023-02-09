@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YARC - Yet Another Reflow Controller</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" type="text/css" href="materialize.min.css">
+  <link rel="stylesheet" type="text/css" href="diagram.css">
+  <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>  
+  <div class="header valign-wrapper">
+    <img src="/logo" alt="logo" style="width: 64px; padding-right: 10px;">
+    <span>Yet Another Reflow Controller</span>
+  </div>
+  <h2 class="center-align">Create profile</h2>
+  <div class="grid-container">
+    <div id="reflowRampSpacer"></div>
+    <div id="reflowRamp"></div>
+    <div id="reflow"></div>
+    <div id="soakRamp"></div>
+    <div id="soak"></div>
+    <div id="reflowRampBottom"></div>  
+    <div id="cooldown"></div>
+    <div id="soakRampLabel" class="center-align label-font-size">t<sub>rs</sub></div>
+    <div id="soakLabel" class="center-align label-font-size">t<sub>s</sub></div>
+    <div id="reflowRampLabel" class="center-align label-font-size">t<sub>rr</sub></div>
+    <div id="reflowLabel" class="center-align label-font-size">t<sub>r</sub></div>
+    <div id="cooldownLabel" class="center-align label-font-size">t<sub>c</sub></div>
+  </div>
+  <div class="row">
+    <form id="createProfileForm" class="col s12 m8 l4 offset-m2 offset-l4">      
+      <div class="input-field ">
+          <label for="name" class="active">Name</label><input id="name" type="text" required/>
+      </div>
+      <div class="input-field unit unit-cs">
+          <label for="soakRampRate" class="active">Soak ramp rate</label><input id="soakRampRate" class="validate" type="number" min="1" max="3" step="0.1" value="2" required/>
+      </div>
+      <div class="input-field unit unit-c">
+          <label for="soakTemperature" class="active">Soak temperature</label><input id="soakTemperature" class="validate" type="number" min="20" max="180" value="150" required/>
+      </div>
+      <div class="input-field unit unit-s">
+          <label for="soakDuration" class="active">Soak duration</label><input id="soakDuration" class="validate" type="number" min="60" max="1000" value="90" required/>
+      </div>
+      <div class="input-field unit unit-cs">
+          <label for="reflowRampRate" class="active">Reflow ramp rate</label><input id="reflowRampRate" class="validate" type="number" min="1" max="3" step="0.1" value="2" required/>
+      </div>
+      <div class="input-field unit unit-c">
+        <label for="reflowTemperature" class="active">Reflow temperature</label><input id="reflowTemperature" class="validate" type="number" min="20" max="300" value="220" required/>
+      </div>    
+      <div class="input-field unit unit-s">
+        <label for="reflowDuration" class="active">Reflow duration</label><input id="reflowDuration" class="validate" type="number" min="45" max="1000" value="60" required/>
+      </div>
+      <div class="right-align">
+        <a href="/" class="btn-small grey lighten-2 black-text">Back</a>
+        <input type="submit" class="btn-small" value="Submit" onclick="createProfile(event)"/>    
+      </div>  
+    </form>
+  </div>
+  <script src="main.js"></script>
+  <script src="diagram.js"></script>
+</body>
+</html>
