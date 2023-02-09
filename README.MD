@@ -23,7 +23,5 @@ At this time there are two functions implemented in the webinterface of the cont
 
 ## TODO / PLANS
 
-Implementing IotWebConf into this project would be a good idea. Then you could add the oven to your local network maybe using bonjour as http://yarc.local/
-from there on could be added more features for the webinterface
+Implementing IotWebConf into this project would be a good idea. Then you could add the oven to your local network as http://yarc.local/
 
-Maybe do costum stylesheets/theme for lvgl using yarc logo and 'corporate design'.. in case there is too much time on my hands
